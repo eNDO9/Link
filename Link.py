@@ -18,7 +18,7 @@ def main():
         # Display guidance message conditionally
         if load_error:
             st.info("This file may contain extra rows or inconsistent formatting at the beginning, likely from BrandWatch. "
-                    "Try increasing the 'Number of rows to skip' option and re-upload the file.")
+                    "**Try increasing the 'Number of rows to skip' option and re-upload the file.**")
         
         # Option to skip rows
         skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
@@ -104,7 +104,7 @@ def main():
 
         except Exception as e:
             load_error = True  # Set error flag if an exception occurs
-            st.error(f"An unexpected error occurred: {e}")
+            #st.error(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
     main()
