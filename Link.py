@@ -39,11 +39,16 @@ def main():
                     st.warning("This file may contain extra rows or inconsistent formatting. "
                                "Adjust the 'Number of rows to skip' option and try loading again.")
 
+            # Display the preview if the file loaded successfully
+            if "df" in st.session_state:
+                st.subheader("Preview of CSV (first 50 rows)")
+                st.write(st.session_state.df.head(50))
+
     # Step 2: Preview and Column Selection
     if st.session_state.step == "preview":
         st.header("CSV Preview and Column Selection")
 
-        # Display the preview of the loaded CSV
+        # Display the preview of the loaded CSV again
         st.subheader("Preview of CSV (first 50 rows)")
         st.write(st.session_state.df.head(50))
 
