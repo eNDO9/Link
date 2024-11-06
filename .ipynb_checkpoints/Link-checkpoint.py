@@ -37,8 +37,8 @@ def main():
             st.session_state['target_column'] = target_column
 
         except pd.errors.ParserError:
-            st.error("Error reading file. This file may contain extra rows or inconsistent formatting at the beginning. "
-                     "Try increasing the 'Number of rows to skip' and re-upload the file.")
+            st.write("This file may contain extra rows or inconsistent formatting at the beginning, likley from BrandWatch. "
+                     "Try increasing the Number of rows to skip.")
         except Exception as e:
             st.error(f"An unexpected error occurred: {e}")
 
