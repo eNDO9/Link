@@ -10,25 +10,18 @@ def main():
     st.header("Upload CSV File")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 
-    # Initialize G as None and error flag
+    # Initialize G as None
     G = None
-    load_error = False
 
     if uploaded_file is not None:
-        # Display guidance message conditionally
-        if load_error:
-            st.info("This file may contain extra rows or inconsistent formatting at the beginning, likely from BrandWatch. "
-                    "**Try increasing the 'Number of rows to skip' option and re-upload the file.**")
-        
         # Option to skip rows
         skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
         # Attempt to read the CSV with the specified number of rows to skip
         try:
             df = pd.read_csv(uploaded_file, skiprows=skip_rows)
-            load_error = False  # Reset the error flag if CSV loads successfully
 
-            # Preview first 50 rows
+            # If loading is successful, show the preview and hide the message
             st.subheader("Preview of CSV (first 50 rows)")
             st.write(df.head(50))
 
@@ -102,9 +95,10 @@ def main():
                         gexf_data = to_gexf(G)
                         st.download_button(label="Download GEXF", data=gexf_data, file_name="network_graph.gexf", mime="application/gexf+xml")
 
-        except Exception as e:
-            load_error = True  # Set error flag if an exception occurs
-            #st.error(f"An unexpected error occurred: {e}")
+        except Exception:
+            # Display the helpful warning message in case of an error
+            st.info("This file may contain extra rows or inconsistent formatting at the beginning, likely from BrandWatch. "
+                    "**Try increasing the 'Number of rows to skip' option and re-upload the file.**")
 
 if __name__ == "__main__":
     main()
