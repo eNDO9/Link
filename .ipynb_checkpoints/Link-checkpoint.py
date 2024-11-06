@@ -31,66 +31,71 @@ def main():
             st.write(f"**Source:** {source_column}")
             st.write(f"**Target:** {target_column}")
 
-        # Step 1: Preview Source and Target columns
-        st.subheader("Preview of Source and Target Columns")
-        st.write(df[[source_column, target_column]].head(10))  # Show first 10 rows of Source and Target columns
+            # Step 1: Preview Source and Target columns
+            st.subheader("Preview of Source and Target Columns")
+            st.write(df[[source_column, target_column]].head(10))  # Show first 10 rows of Source and Target columns
 
-        # Step 2: Choose Graph Type
-        st.subheader("Choose Graph Type")
-        graph_type = st.selectbox(
-            "Select the type of network graph",
-            ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
-            help=("Directed: One-way relationships.\n"
-                  "Undirected: Mutual relationships.\n"
-                  "Multi-Directed: Directed graph allowing multiple edges between nodes.\n"
-                  "Multi-Undirected: Undirected graph allowing multiple edges between nodes.")
-        )
+            # Step 2: Choose Graph Type
+            st.subheader("Choose Graph Type")
+            graph_type = st.selectbox(
+                "Select the type of network graph",
+                ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
+                help=("Directed: One-way relationships.\n"
+                      "Undirected: Mutual relationships.\n"
+                      "Multi-Directed: Directed graph allowing multiple edges between nodes.\n"
+                      "Multi-Undirected: Undirected graph allowing multiple edges between nodes.")
+            )
 
-        # Step 3: Create Network Graph
-        if st.button("Create Network Graph"):
-            if graph_type == "Directed":
-                G = nx.DiGraph()
-            elif graph_type == "Undirected":
-                G = nx.Graph()
-            elif graph_type == "Multi-Directed":
-                G = nx.MultiDiGraph()
-            elif graph_type == "Multi-Undirected":
-                G = nx.MultiGraph()
+            # Step 3: Create Network Graph
+            if st.button("Create Network Graph"):
+                if graph_type == "Directed":
+                    G = nx.DiGraph()
+                elif graph_type == "Undirected":
+                    G = nx.Graph()
+                elif graph_type == "Multi-Directed":
+                    G = nx.MultiDiGraph()
+                elif graph_type == "Multi-Undirected":
+                    G = nx.MultiGraph()
+                
+                # Add edges to the graph
+                edges = df[[source_column, target_column]].values.tolist()
+                G.add_edges_from(edges)
+                st.write(f"{graph_type} graph created successfully with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
+
+            # Step 4: Export Options
+            st.subheader("Export Network Graph")
             
-            # Add edges to the graph
-            edges = df[[source_column, target_column]].values.tolist()
-            G.add_edges_from(edges)
-            st.write(f"{graph_type} graph created successfully with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
-
-        # Step 4: Export Options
-        st.subheader("Export Network Graph")
-        
-        # Function to convert NetworkX graph to CSVs for download
-        def to_csv(G):
-            nodes_df = pd.DataFrame(G.nodes, columns=["Node"])
-            edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
-            return nodes_df, edges_df
-        
-        # Function to convert NetworkX graph to GEXF for download
-        def to_gexf(G):
-            gexf_data = BytesIO()
-            nx.write_gexf(G, gexf_data)
-            gexf_data.seek(0)
-            return gexf_data
-
-        export_format = st.selectbox("Choose export format", ["CSV (Nodes and Edges)", "GEXF"])
-
-        if export_format == "CSV (Nodes and Edges)":
-            nodes_df, edges_df = to_csv(G)
-            nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
-            edges_csv = edges_df.to_csv(index=False).encode('utf-8')
+            # Function to convert NetworkX graph to CSVs for download
+            def to_csv(G):
+                nodes_df = pd.DataFrame(G.nodes, columns=["Node"])
+                edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
+                return nodes_df, edges_df
             
-            st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
-            st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv", mime="text/csv")
+            # Function to convert NetworkX graph to GEXF for download
+            def to_gexf(G):
+                gexf_data = BytesIO()
+                nx.write_gexf(G, gexf_data)
+                gexf_data.seek(0)
+                return gexf_data
 
-        elif export_format == "GEXF":
-            gexf_data = to_gexf(G)
-            st.download_button(label="Download GEXF", data=gexf_data, file_name="network_graph.gexf", mime="application/gexf+xml")
+            export_format = st.selectbox("Choose export format", ["CSV (Nodes and Edges)", "GEXF"])
+
+            if export_format == "CSV (Nodes and Edges)":
+                nodes_df, edges_df = to_csv(G)
+                nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
+                edges_csv = edges_df.to_csv(index=False).encode('utf-8')
+                
+                st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
+                st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv", mime="text/csv")
+
+            elif export_format == "GEXF":
+                gexf_data = to_gexf(G)
+                st.download_button(label="Download GEXF", data=gexf_data, file_name="network_graph.gexf", mime="application/gexf+xml")
+
+        except Exception as e:
+            st.write("This file may contain extra rows or inconsistent formatting at the beginning, likely from BrandWatch. "
+                     "Try increasing the Number of rows to skip.")
+            st.error(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
     main()
