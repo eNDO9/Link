@@ -13,24 +13,23 @@ def main():
     if uploaded_file is not None:
         # Option to skip rows
         skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
-        st.write("Reading file...")
 
-        # Read the CSV with option to skip rows
+        # Attempt to read the CSV with the specified number of rows to skip
         try:
             df = pd.read_csv(uploaded_file, skiprows=skip_rows)
-            st.write("File read successfully!")
-        except Exception as e:
-            st.error(f"An unexpected error occurred: {e}")
-            return
 
-        # Preview first 50 rows
-        st.subheader("Preview of CSV (first 50 rows)")
-        st.write(df.head(50))
+            # Preview first 50 rows
+            st.subheader("Preview of CSV (first 50 rows)")
+            st.write(df.head(50))
 
-        # Select Source and Target columns
-        columns = df.columns.tolist()
-        source_column = st.selectbox("Select Source column", columns)
-        target_column = st.selectbox("Select Target column", columns)
+            # Select Source and Target columns
+            columns = df.columns.tolist()
+            source_column = st.selectbox("Select **Source** column", columns)
+            target_column = st.selectbox("Select **Target** column", columns)
+
+            # Print notifications
+            st.write(f"**Source:** {source_column}")
+            st.write(f"**Target:** {target_column}")
 
         # Step 1: Preview Source and Target columns
         st.subheader("Preview of Source and Target Columns")
