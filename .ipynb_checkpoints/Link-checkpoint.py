@@ -38,7 +38,7 @@ def main():
 
         except pd.errors.ParserError:
             st.info("This file may contain extra rows or inconsistent formatting at the beginning, likley from BrandWatch. "
-                     "**Try increasing the 'Number of rows to skip.'**")
+                     "**Try increasing the number of rows to skip.**")
         except Exception as e:
             st.error(f"An unexpected error occurred: {e}")
 
