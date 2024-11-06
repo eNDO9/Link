@@ -29,7 +29,7 @@ def main():
 
             # Print notifications
             st.write("**Source** and **Target** columns selected.")
-            st.write(f"**Source:** {source_column}, **Target:** {target_column}")
+            st.write(f"**Source:** {source_column}\n**Target:** {target_column}")
 
             # Save df in session state for use in later steps
             st.session_state['df'] = df
