@@ -104,7 +104,9 @@ def main():
 
         except Exception:
             load_error = True  # Set error flag if an exception occurs
-            st.experimental_rerun()  # Reload the app to display the error message above the "Number of rows to skip"
+            # Display the warning message right above the "Number of rows to skip"
+            st.warning("This file may contain extra rows or inconsistent formatting at the beginning, likely from BrandWatch. "
+                       "**Try increasing the 'Number of rows to skip' option and re-upload the file.**")
 
 if __name__ == "__main__":
     main()
