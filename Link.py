@@ -44,6 +44,8 @@ def main():
                 st.subheader("Preview of CSV (first 50 rows)")
                 st.write(st.session_state.df.head(50))
 
+    # Step 2: Preview and Column Selection
+    if st.session_state.step == "preview":
         st.header("CSV Preview and Column Selection")
 
         # Display the preview of the loaded CSV again
