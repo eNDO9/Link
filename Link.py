@@ -35,7 +35,8 @@ def step1_upload_and_preview():
                 StringIO(uploaded_file.getvalue().decode("utf-8")),
                 skiprows=skip_rows,
                 nrows=50,  # Limit to 50 rows for preview
-                on_bad_lines='skip'  # Skip bad lines for preview
+                #on_bad_lines='skip'  # Skip bad lines for preview
+                error_bad_lines=False
             )
             st.subheader("CSV Data Preview (first 50 rows)")
             st.write(preview_df.head(50))
