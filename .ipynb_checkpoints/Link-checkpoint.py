@@ -99,14 +99,13 @@ def export_graph(G, graph_type):
 
     # Function to convert NetworkX graph to CSVs or GEXF for download
     def to_csv(G, graph_type):
-        if G.number_of_nodes() > 0:
-            nodes_df = pd.DataFrame(G.nodes, columns=["Node"])
-        else:
-            nodes_df = pd.DataFrame(columns=["Node"])  # Empty DataFrame if no nodes
+        # Convert nodes to a DataFrame
+        nodes_df = pd.DataFrame(G.nodes, columns=["Node"]) if G.number_of_nodes() > 0 else pd.DataFrame(columns=["Node"])
 
-        # Handling MultiGraph and MultiDiGraph by flattening edges with keys
+        # Convert edges to a DataFrame, handling MultiGraph/MultiDiGraph without a "Key" column
         if "Multi" in graph_type:
-            edges_df = pd.DataFrame([(u, v, k) for u, v, k in G.edges(keys=True)], columns=["Source", "Target", "Key"])
+            # Flatten edges without including the key for multi-graphs
+            edges_df = pd.DataFrame([(u, v) for u, v, _ in G.edges(keys=True)], columns=["Source", "Target"])
         else:
             edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
 
