@@ -40,12 +40,9 @@ def load_and_select_columns(uploaded_file, skip_rows):
             skiprows=skip_rows
         )
 
-        # Display available columns and allow column selection
-        columns = df.columns.tolist()
-        st.write("Available Columns:", columns)
-
-        source_column = st.selectbox("Select Source column", columns)
-        target_column = st.selectbox("Select Target column", columns)
+        # Column selection without displaying all columns
+        source_column = st.selectbox("Select Source column", df.columns.tolist())
+        target_column = st.selectbox("Select Target column", df.columns.tolist())
 
         # Display a preview of the selected columns
         try:
