@@ -29,28 +29,29 @@ def step1_upload_and_preview():
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
     if uploaded_file is not None:
+        # Try previewing the CSV with error handling
         try:
-            # Display a preview with error handling to ignore problematic lines
+            # Attempt a flexible preview
             preview_df = pd.read_csv(
                 StringIO(uploaded_file.getvalue().decode("utf-8")),
                 skiprows=skip_rows,
-                nrows=50,  # Limit to 50 rows for preview
-                #on_bad_lines='skip'  # Skip bad lines for preview
-                error_bad_lines=False
+                nrows=50,  # Preview first 50 rows only
+                on_bad_lines='skip'  # Skip any badly formatted lines for preview
             )
             st.subheader("CSV Data Preview (first 50 rows)")
-            st.write(preview_df.head(50))
+            st.write(preview_df)
 
-            # Option to load the CSV without error handling for full data processing
+            # Button to load the full CSV strictly, with error handling off
             if st.button("Load CSV"):
-                # Load the CSV fully without skipping errors to enforce data integrity
+                # Strictly load the full data to ensure all rows are properly formatted
                 st.session_state.df = pd.read_csv(
                     StringIO(uploaded_file.getvalue().decode("utf-8")),
                     skiprows=skip_rows
                 )
                 st.session_state.step = 2  # Move to the next step
         except Exception as e:
-            st.warning("Error loading file. Try adjusting the rows to skip.")
+            st.warning("Error loading file. Please try adjusting the rows to skip.")
+            st.stop()  # Stop execution to avoid proceeding with incorrect data
 
 def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
