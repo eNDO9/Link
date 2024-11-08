@@ -3,41 +3,52 @@ import pandas as pd
 import networkx as nx
 from io import StringIO, BytesIO
 
-# Cache the CSV loading function to avoid reloading on reruns
-@st.cache_data
-def load_full_csv(file, skip_rows):
-    return pd.read_csv(StringIO(file.getvalue().decode("utf-8")), skiprows=skip_rows, on_bad_lines='skip')
-
 def main():
     st.title("Network Graph Creator")
-    
+
     # Step 1: Upload and Preview CSV
     st.header("Step 1: Upload CSV File")
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
+    
+    # Check if the CSV has already been loaded into session_state
+    if "df" not in st.session_state:
+        uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+        skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
+        
+        # Display the CSV preview as part of Step 1
+        if uploaded_file is not None:
+            try:
+                # Load and display a preview of the first 50 rows
+                preview_df = pd.read_csv(
+                    StringIO(uploaded_file.getvalue().decode("utf-8")),
+                    skiprows=skip_rows,
+                    nrows=50,
+                    on_bad_lines='skip'
+                )
+                st.subheader("CSV Data Preview (first 50 rows)")
+                st.write(preview_df)
 
-    # Display the CSV preview as part of Step 1
-    if uploaded_file is not None:
-        try:
-            # Load and display a preview of the first 50 rows
-            preview_df = pd.read_csv(
-                StringIO(uploaded_file.getvalue().decode("utf-8")),
-                skiprows=skip_rows,
-                nrows=50,
-                on_bad_lines='skip'
-            )
-            st.subheader("CSV Data Preview (first 50 rows)")
-            st.write(preview_df)
+                # Load full CSV and save it in session_state when "Load CSV" is clicked
+                if st.button("Load CSV"):
+                    st.session_state.df = pd.read_csv(
+                        StringIO(uploaded_file.getvalue().decode("utf-8")),
+                        skiprows=skip_rows,
+                        on_bad_lines='skip'
+                    )
+                    st.session_state.step = 2  # Proceed to Step 2
+            except Exception as e:
+                st.warning("Error loading file. Try adjusting the rows to skip.")
+    else:
+        # Proceed to Step 2 if the DataFrame is already loaded
+        step2_select_columns()
 
-            # Proceed to Step 2 upon clicking "Load CSV"
-            if st.button("Load CSV"):
-                df = load_full_csv(uploaded_file, skip_rows)
-                step2_select_columns(df)
-        except Exception as e:
-            st.warning("Error loading file. Try adjusting the rows to skip.")
-
-def step2_select_columns(df):
+def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
+    
+    # Ensure DataFrame is loaded
+    df = st.session_state.get("df")
+    if df is None:
+        st.warning("No data loaded. Please go back to Step 1.")
+        return
 
     # Column selection
     columns = df.columns.tolist()
@@ -50,10 +61,22 @@ def step2_select_columns(df):
 
     # Button to move to Step 3 and create the network graph
     if st.button("Create Network Graph"):
-        create_and_export_graph(df, source_column, target_column)
+        st.session_state.step = 3
+        st.session_state.source_column = source_column
+        st.session_state.target_column = target_column
+        step3_create_and_export_graph()
 
-def create_and_export_graph(df, source_column, target_column):
+def step3_create_and_export_graph():
     st.header("Step 3: Create and Export Network Graph")
+    
+    # Ensure columns are selected
+    df = st.session_state.get("df")
+    source_column = st.session_state.get("source_column")
+    target_column = st.session_state.get("target_column")
+    
+    if df is None or source_column is None or target_column is None:
+        st.warning("No columns selected. Please go back to Step 2.")
+        return
 
     # Graph type selection
     graph_type = st.selectbox(
