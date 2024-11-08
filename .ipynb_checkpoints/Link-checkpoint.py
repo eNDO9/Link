@@ -1,8 +1,3 @@
-import streamlit as st
-import pandas as pd
-import networkx as nx
-from io import BytesIO
-
 # Initialize session state variables on the first run
 if "step" not in st.session_state:
     st.session_state.step = 1
@@ -40,8 +35,7 @@ def step1_upload_and_preview():
         st.subheader("Preview of CSV (first 50 rows)")
         st.write(st.session_state.df.head(50))
 
-    # Navigation button to proceed to Step 2
-    if st.session_state.df is not None:
+        # Navigation button to proceed to Step 2
         if st.button("Next"):
             st.session_state.step = 2
 
@@ -113,7 +107,7 @@ def step3_create_and_export_graph():
 def export_graph(G):
     st.subheader("Export Network Graph")
 
-    # Convert NetworkX graph to CSVs or GEXF for download
+    # Function to convert NetworkX graph to CSVs or GEXF for download
     def to_csv(G):
         nodes_df = pd.DataFrame(G.nodes, columns=["Node"])
         edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
