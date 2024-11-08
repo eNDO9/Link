@@ -82,43 +82,62 @@ def main():
                 # Add edges to the graph
                 edges = st.session_state.df[[st.session_state.source_column, st.session_state.target_column]].values.tolist()
                 G.add_edges_from(edges)
-                st.session_state.graph = G  # Store the created graph in session state
+                
+                # Store the created graph in session state
+                st.session_state.graph = G  
+                
                 st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
             except Exception as e:
                 st.error("Failed to create the network graph.")
 
         # Export options only if a graph has been created
         if "graph" in st.session_state:
-            export_graph(st.session_state.graph)
+            export_graph(st.session_state.graph, graph_type)
 
-def export_graph(G):
+def export_graph(G, graph_type):
     st.subheader("Export Network Graph")
 
     # Function to convert NetworkX graph to CSVs or GEXF for download
-    def to_csv(G):
-        nodes_df = pd.DataFrame(G.nodes, columns=["Node"])
-        edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
+    def to_csv(G, graph_type):
+        if G.number_of_nodes() > 0:
+            nodes_df = pd.DataFrame(G.nodes, columns=["Node"])
+        else:
+            nodes_df = pd.DataFrame(columns=["Node"])  # Empty DataFrame if no nodes
+
+        # Handling MultiGraph and MultiDiGraph by flattening edges with keys
+        if "Multi" in graph_type:
+            edges_df = pd.DataFrame([(u, v, k) for u, v, k in G.edges(keys=True)], columns=["Source", "Target", "Key"])
+        else:
+            edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
+
         return nodes_df, edges_df
 
     def to_gexf(G):
-        gexf_data = BytesIO()
-        nx.write_gexf(G, gexf_data)
-        gexf_data.seek(0)
-        return gexf_data
+        if G.number_of_edges() > 0:
+            gexf_data = BytesIO()
+            nx.write_gexf(G, gexf_data)
+            gexf_data.seek(0)
+            return gexf_data
+        else:
+            st.warning("The graph has no edges to export in GEXF format.")
+            return None
 
     # Show download buttons
     export_format = st.selectbox("Choose export format", ["CSV (Nodes and Edges)", "GEXF"])
 
     if export_format == "CSV (Nodes and Edges)":
-        nodes_df, edges_df = to_csv(G)
-        nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
-        edges_csv = edges_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
-        st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv", mime="text/csv")
+        nodes_df, edges_df = to_csv(G, graph_type)
+        if not nodes_df.empty:
+            nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
+            st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
+        if not edges_df.empty:
+            edges_csv = edges_df.to_csv(index=False).encode('utf-8')
+            st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv", mime="text/csv")
 
     elif export_format == "GEXF":
         gexf_data = to_gexf(G)
-        st.download_button(label="Download GEXF", data=gexf_data, file_name="network_graph.gexf", mime="application/gexf+xml")
+        if gexf_data:
+            st.download_button(label="Download GEXF", data=gexf_data, file_name="network_graph.gexf", mime="application/gexf+xml")
 
 if __name__ == "__main__":
     main()
