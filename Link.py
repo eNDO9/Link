@@ -28,25 +28,28 @@ def step1_upload_and_preview():
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
-    # Display preview based on file and skip_rows inputs
     if uploaded_file is not None:
         try:
-            # Attempt to read the CSV with the specified number of rows to skip
-            df = pd.read_csv(StringIO(uploaded_file.getvalue().decode("utf-8")), skiprows=skip_rows)
+            # Display a preview with error handling to ignore problematic lines
+            preview_df = pd.read_csv(
+                StringIO(uploaded_file.getvalue().decode("utf-8")),
+                skiprows=skip_rows,
+                nrows=50,  # Limit to 50 rows for preview
+                on_bad_lines='skip'  # Skip bad lines for preview
+            )
             st.subheader("CSV Data Preview (first 50 rows)")
-            st.write(df.head(50))
+            st.write(preview_df.head(50))
 
-            # Option to load the previewed CSV into session state and move to the next step
+            # Option to load the CSV without error handling for full data processing
             if st.button("Load CSV"):
-                st.session_state.df = df  # Save the DataFrame in session state
+                # Load the CSV fully without skipping errors to enforce data integrity
+                st.session_state.df = pd.read_csv(
+                    StringIO(uploaded_file.getvalue().decode("utf-8")),
+                    skiprows=skip_rows
+                )
                 st.session_state.step = 2  # Move to the next step
         except Exception as e:
-            # If loading fails, display raw text preview of the first few lines to help troubleshoot
             st.warning("Error loading file. Try adjusting the rows to skip.")
-            with StringIO(uploaded_file.getvalue().decode("utf-8")) as f:
-                preview_text = "".join([next(f) for _ in range(5)])  # Display the first 5 lines as plain text
-                st.subheader("Raw File Preview (first 5 lines)")
-                st.text(preview_text)
 
 def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
