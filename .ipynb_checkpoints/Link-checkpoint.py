@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import networkx as nx
 from io import StringIO, BytesIO
+import networkx as nx
 
 def main():
     # Initialize session state variables if they are not already set
@@ -29,23 +29,23 @@ def step1_upload_and_preview():
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
     if uploaded_file is not None:
-        # Try previewing the CSV with error handling
+        # Read first 50 lines as raw text for display preview
         try:
-            # Attempt a flexible preview
-            preview_df = pd.read_csv(
-                StringIO(uploaded_file.getvalue().decode("utf-8")),
-                skiprows=skip_rows,
-                nrows=50,  # Preview first 50 rows only
-                on_bad_lines='skip'  # Skip any badly formatted lines for preview
-            )
+            # Decode the file and skip rows as needed, then split into lines
+            content = uploaded_file.getvalue().decode("utf-8")
+            lines = content.splitlines()[skip_rows:skip_rows + 50]  # Only the first 50 lines after skip
+
+            # Create a DataFrame from the raw lines using manual parsing
+            preview_data = StringIO("\n".join(lines))  # Combine lines back into CSV string format
+            preview_df = pd.read_csv(preview_data, error_bad_lines=False)  # Load as DataFrame, ignore errors
             st.subheader("CSV Data Preview (first 50 rows)")
-            st.write(preview_df)
+            st.write(preview_df)  # Display the DataFrame preview
 
             # Button to load the full CSV strictly, with error handling off
             if st.button("Load CSV"):
                 # Strictly load the full data to ensure all rows are properly formatted
                 st.session_state.df = pd.read_csv(
-                    StringIO(uploaded_file.getvalue().decode("utf-8")),
+                    StringIO(content),
                     skiprows=skip_rows
                 )
                 st.session_state.step = 2  # Move to the next step
