@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import networkx as nx
-from io import BytesIO, StringIO
+from io import StringIO, BytesIO
 
 def main():
     # Initialize session state variables if they are not already set
@@ -28,18 +28,12 @@ def step1_upload_and_preview():
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
-    # Display a raw text preview if a file is uploaded
+    # Display a preview as a DataFrame if a file is uploaded
     if uploaded_file is not None:
         try:
-            # Read the first few lines of the file as plain text for a quick preview
-            with StringIO(uploaded_file.getvalue().decode("utf-8")) as f:
-                preview_text = "".join([next(f) for _ in range(5)])  # Display the first 5 lines
-                st.subheader("File Preview (first 5 lines as raw text)")
-                st.text(preview_text)
-            
-            # Attempt to read the CSV with the specified number of rows to skip for DataFrame preview
-            df = pd.read_csv(uploaded_file, skiprows=skip_rows)
-            st.subheader("CSV Data Preview (first 50 rows as table)")
+            # Attempt to read the CSV with the specified number of rows to skip
+            df = pd.read_csv(StringIO(uploaded_file.getvalue().decode("utf-8")), skiprows=skip_rows)
+            st.subheader("CSV Data Preview (first 50 rows)")
             st.write(df.head(50))
 
             # Option to load the previewed CSV into session state and move to the next step
