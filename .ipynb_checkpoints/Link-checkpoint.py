@@ -28,7 +28,7 @@ def step1_upload_and_preview():
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
-    # Display a preview as a DataFrame if a file is uploaded
+    # Display preview based on file and skip_rows inputs
     if uploaded_file is not None:
         try:
             # Attempt to read the CSV with the specified number of rows to skip
@@ -41,7 +41,12 @@ def step1_upload_and_preview():
                 st.session_state.df = df  # Save the DataFrame in session state
                 st.session_state.step = 2  # Move to the next step
         except Exception as e:
+            # If loading fails, display raw text preview of the first few lines to help troubleshoot
             st.warning("Error loading file. Try adjusting the rows to skip.")
+            with StringIO(uploaded_file.getvalue().decode("utf-8")) as f:
+                preview_text = "".join([next(f) for _ in range(5)])  # Display the first 5 lines as plain text
+                st.subheader("Raw File Preview (first 5 lines)")
+                st.text(preview_text)
 
 def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
