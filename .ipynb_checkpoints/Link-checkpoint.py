@@ -57,19 +57,15 @@ def main():
         st.subheader("Step 3: Create and Export Network Graph")
 
         # Graph type selection with error-catching
-        try:
-            graph_type = st.selectbox(
-                "Select Graph Type",
-                ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
-                help=("Directed: One-way relationships.\n"
-                      "Undirected: Mutual relationships.\n"
-                      "Multi-Directed: Directed graph allowing multiple edges.\n"
-                      "Multi-Undirected: Undirected graph allowing multiple edges.")
-            )
-            st.session_state.graph_type = graph_type  # Track graph type in session state
-        except Exception:
-            # Catch and ignore errors related to changing graph type
-            pass
+        graph_type = st.selectbox(
+            "Select Graph Type",
+            ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
+            help=("Directed: One-way relationships.\n"
+                  "Undirected: Mutual relationships.\n"
+                  "Multi-Directed: Directed graph allowing multiple edges.\n"
+                  "Multi-Undirected: Undirected graph allowing multiple edges.")
+        )
+        st.session_state.graph_type = graph_type  # Track graph type in session state
 
         # Button to create the network graph
         if st.button("Create Network Graph"):
@@ -93,7 +89,6 @@ def main():
                 
                 # Save a success message in session state to persist across Step 3
                 st.session_state.success_message = f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges."
-                st.success(st.session_state.success_message)
             except Exception as e:
                 st.error("Failed to create the network graph.")
 
@@ -128,7 +123,7 @@ def export_graph(G, graph_type):
             return None
 
     # Set GEXF as the default export format
-    export_format = st.selectbox("Choose export format", ["GEXF", "CSV (Nodes and Edges)"])
+    export_format = st.selectbox("Choose export format", ["GEXF", "CSV (Nodes and Edges)"], index=0)
 
     if export_format == "CSV (Nodes and Edges)":
         nodes_df, edges_df = to_csv(G, graph_type)
