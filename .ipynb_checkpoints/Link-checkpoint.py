@@ -1,11 +1,16 @@
-# Initialize session state variables on the first run
-if "step" not in st.session_state:
-    st.session_state.step = 1
-    st.session_state.df = None
-    st.session_state.source_column = None
-    st.session_state.target_column = None
+import streamlit as st
+import pandas as pd
+import networkx as nx
+from io import BytesIO
 
 def main():
+    # Initialize session state variables if they are not already set
+    if "step" not in st.session_state:
+        st.session_state.step = 1
+        st.session_state.df = None
+        st.session_state.source_column = None
+        st.session_state.target_column = None
+
     st.title("Network Graph Creator")
     
     # Step-by-step process using session state
