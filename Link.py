@@ -24,25 +24,24 @@ def main():
 def step1_upload_and_preview():
     st.header("Step 1: Upload CSV File")
 
+    # File uploader and row skip option
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
-    if uploaded_file is not None and st.button("Load CSV"):
+    # Display preview based on file and skip_rows inputs
+    if uploaded_file is not None:
         try:
+            # Attempt to read the CSV with the specified number of rows to skip
             df = pd.read_csv(uploaded_file, skiprows=skip_rows)
-            st.session_state.df = df  # Save the DataFrame in session state
-            st.session_state.step = 2  # Move to the next step
-        except Exception:
+            st.subheader("Preview of CSV (first 50 rows)")
+            st.write(df.head(50))
+
+            # Option to load the previewed CSV into session state and move to the next step
+            if st.button("Load CSV"):
+                st.session_state.df = df  # Save the DataFrame in session state
+                st.session_state.step = 2  # Move to the next step
+        except Exception as e:
             st.warning("Error loading file. Try adjusting the rows to skip.")
-
-    # Show preview if DataFrame is loaded
-    if st.session_state.df is not None:
-        st.subheader("Preview of CSV (first 50 rows)")
-        st.write(st.session_state.df.head(50))
-
-        # Navigation button to proceed to Step 2
-        if st.button("Next"):
-            st.session_state.step = 2
 
 def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
