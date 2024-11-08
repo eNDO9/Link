@@ -6,8 +6,13 @@ from io import StringIO, BytesIO
 def main():
     st.title("Network Graph Creator")
 
-    # Step 1: File Upload and Preview
+    # Detect file upload or removal to reset the session
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    if uploaded_file != st.session_state.get("last_uploaded_file"):
+        # Reset all session state variables when a new file is uploaded or the file is removed
+        st.session_state.clear()
+        st.session_state.last_uploaded_file = uploaded_file
+
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
     if uploaded_file is not None:
