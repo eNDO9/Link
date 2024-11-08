@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import networkx as nx
 from io import StringIO, BytesIO
+import networkx as nx
 
 def main():
     # Initialize session state variables if they are not already set
@@ -29,29 +29,27 @@ def step1_upload_and_preview():
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
     if uploaded_file is not None:
-        # Try previewing the CSV with error handling
         try:
-            # Attempt a flexible preview
+            # Read the first 50 lines for a preview, skipping any bad lines
             preview_df = pd.read_csv(
                 StringIO(uploaded_file.getvalue().decode("utf-8")),
                 skiprows=skip_rows,
-                nrows=50,  # Preview first 50 rows only
-                on_bad_lines='skip'  # Skip any badly formatted lines for preview
+                nrows=50,
+                on_bad_lines='skip'
             )
             st.subheader("CSV Data Preview (first 50 rows)")
             st.write(preview_df)
 
-            # Button to load the full CSV strictly, with error handling off
+            # Button to load the full CSV strictly
             if st.button("Load CSV"):
-                # Strictly load the full data to ensure all rows are properly formatted
                 st.session_state.df = pd.read_csv(
                     StringIO(uploaded_file.getvalue().decode("utf-8")),
                     skiprows=skip_rows
                 )
                 st.session_state.step = 2  # Move to the next step
         except Exception as e:
-            st.warning("Error loading file. Please try adjusting the rows to skip.")
-            st.stop()  # Stop execution to avoid proceeding with incorrect data
+            st.warning("Error loading file. Try adjusting the rows to skip.")
+            st.stop()
 
 def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
@@ -63,13 +61,29 @@ def step2_select_columns():
             st.session_state.step = 1
         return
 
+    # Show available columns and select source/target columns
     columns = st.session_state.df.columns.tolist()
+    st.write("Available Columns:", columns)  # Display available columns for debugging
+
+    # Source and target column selection with validation
     st.session_state.source_column = st.selectbox("Select Source column", columns)
     st.session_state.target_column = st.selectbox("Select Target column", columns)
 
-    # Show preview of selected columns
-    st.subheader("Preview of Selected Columns")
-    st.write(st.session_state.df[[st.session_state.source_column, st.session_state.target_column]].head(10))
+    # Check if the selected columns are valid and display a preview
+    try:
+        st.subheader("Preview of Selected Columns")
+        preview_df = st.session_state.df[[st.session_state.source_column, st.session_state.target_column]].head(10)
+        st.write(preview_df)
+    except KeyError as e:
+        st.error(f"Error: Selected columns not found. {e}")
+        if st.button("Back to Upload"):
+            st.session_state.step = 1
+        return
+    except ValueError as e:
+        st.error(f"Error: {e}")
+        if st.button("Back to Upload"):
+            st.session_state.step = 1
+        return
 
     # Navigation buttons
     if st.button("Back"):
