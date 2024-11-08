@@ -3,129 +3,90 @@ import pandas as pd
 import networkx as nx
 from io import StringIO, BytesIO
 
-# Initialize session state variables
-if "step" not in st.session_state:
-    st.session_state.step = 1
-if "df" not in st.session_state:
-    st.session_state.df = None
-if "source_column" not in st.session_state:
-    st.session_state.source_column = None
-if "target_column" not in st.session_state:
-    st.session_state.target_column = None
-if "loading_message" not in st.session_state:
-    st.session_state.loading_message = ""
-
 def main():
     st.title("Network Graph Creator")
 
-    if st.session_state.step == 1:
-        step1_upload_and_preview()
-    elif st.session_state.step == 2:
-        step2_select_columns()
-    elif st.session_state.step == 3:
-        step3_create_and_export_graph()
-
-def step1_upload_and_preview():
-    st.header("Step 1: Upload CSV File")
-
-    # File uploader and row skip option
+    # Step 1: File Upload and Preview
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
     if uploaded_file is not None:
-        # Display a progress message when "Load CSV" is clicked
+        # Displaying CSV preview immediately based on `skip_rows`
+        preview_df = None
+        try:
+            preview_df = pd.read_csv(
+                StringIO(uploaded_file.getvalue().decode("utf-8")),
+                skiprows=skip_rows,
+                nrows=50,
+                on_bad_lines='skip'
+            )
+            st.subheader("CSV Data Preview (first 50 rows)")
+            st.write(preview_df)
+        except Exception as e:
+            st.warning("Error loading file. Try adjusting the rows to skip.")
+
+        # Full DataFrame loading on "Load CSV" button click
         if st.button("Load CSV"):
-            st.session_state.loading_message = "Processing CSV..."
-            st.write(st.session_state.loading_message)
-
             try:
-                # Load and display preview
-                preview_df = pd.read_csv(
-                    StringIO(uploaded_file.getvalue().decode("utf-8")),
-                    skiprows=skip_rows,
-                    nrows=50,
-                    on_bad_lines='skip'
-                )
-                st.subheader("CSV Data Preview (first 50 rows)")
-                st.write(preview_df)
-
-                # Full DataFrame for later steps
                 st.session_state.df = pd.read_csv(
                     StringIO(uploaded_file.getvalue().decode("utf-8")),
                     skiprows=skip_rows,
                     on_bad_lines='skip'
                 )
-                st.session_state.loading_message = "CSV loaded successfully!"
-                st.session_state.step = 2  # Move to the next step
+                st.success("CSV loaded successfully!")
             except Exception as e:
-                st.session_state.loading_message = "Error loading file. Try adjusting the rows to skip."
+                st.error("Failed to load the full dataset. Please check the file format and try again.")
 
-        # Display loading or success message
-        st.write(st.session_state.loading_message)
+    # Step 2: Column Selection
+    if "df" in st.session_state:
+        st.subheader("Step 2: Select Columns for the Graph")
+        columns = st.session_state.df.columns.tolist()
+        source_column = st.selectbox("Select Source column", columns, index=0)
+        target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
 
-def step2_select_columns():
-    st.header("Step 2: Select Columns for the Graph")
-    
-    # Ensure DataFrame is loaded
-    df = st.session_state.get("df")
-    if df is None:
-        st.warning("No data loaded. Please go back to Step 1.")
-        return
+        # Display preview of selected columns
+        st.subheader("Preview of Selected Columns for Network (first 50 rows)")
+        st.write(st.session_state.df[[source_column, target_column]].head(50))
 
-    # Column selection
-    columns = df.columns.tolist()
-    st.session_state.source_column = st.selectbox("Select Source column", columns, index=0)
-    st.session_state.target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
+        # Save column selections in session state
+        st.session_state.source_column = source_column
+        st.session_state.target_column = target_column
 
-    # Display preview of selected columns as edges
-    st.subheader("Preview of Selected Columns for Network (first 50 rows)")
-    st.write(df[[st.session_state.source_column, st.session_state.target_column]].head(50))
+    # Step 3: Create and Export Network Graph
+    if "source_column" in st.session_state and "target_column" in st.session_state:
+        st.subheader("Step 3: Create and Export Network Graph")
 
-    # Button to move to Step 3 and create the network graph
-    if st.button("Create Network Graph"):
-        st.session_state.step = 3
+        # Graph type selection
+        graph_type = st.selectbox(
+            "Select Graph Type",
+            ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
+            help=("Directed: One-way relationships.\n"
+                  "Undirected: Mutual relationships.\n"
+                  "Multi-Directed: Directed graph allowing multiple edges.\n"
+                  "Multi-Undirected: Undirected graph allowing multiple edges.")
+        )
 
-def step3_create_and_export_graph():
-    st.header("Step 3: Create and Export Network Graph")
-    
-    # Ensure columns are selected
-    df = st.session_state.get("df")
-    source_column = st.session_state.get("source_column")
-    target_column = st.session_state.get("target_column")
-    
-    if df is None or source_column is None or target_column is None:
-        st.warning("No columns selected. Please go back to Step 2.")
-        return
+        # Button to create the network graph
+        if st.button("Create Network Graph"):
+            try:
+                # Initialize the appropriate NetworkX graph
+                if graph_type == "Directed":
+                    G = nx.DiGraph()
+                elif graph_type == "Undirected":
+                    G = nx.Graph()
+                elif graph_type == "Multi-Directed":
+                    G = nx.MultiDiGraph()
+                elif graph_type == "Multi-Undirected":
+                    G = nx.MultiGraph()
 
-    # Graph type selection
-    graph_type = st.selectbox(
-        "Select Graph Type",
-        ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
-        help=("Directed: One-way relationships.\n"
-              "Undirected: Mutual relationships.\n"
-              "Multi-Directed: Directed graph allowing multiple edges.\n"
-              "Multi-Undirected: Undirected graph allowing multiple edges.")
-    )
+                # Add edges to the graph
+                edges = st.session_state.df[[st.session_state.source_column, st.session_state.target_column]].values.tolist()
+                G.add_edges_from(edges)
+                st.write(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
 
-    # Button to create the network graph
-    if st.button("Generate Graph"):
-        # Initialize the appropriate NetworkX graph
-        if graph_type == "Directed":
-            G = nx.DiGraph()
-        elif graph_type == "Undirected":
-            G = nx.Graph()
-        elif graph_type == "Multi-Directed":
-            G = nx.MultiDiGraph()
-        elif graph_type == "Multi-Undirected":
-            G = nx.MultiGraph()
-
-        # Add edges to the graph
-        edges = df[[source_column, target_column]].values.tolist()
-        G.add_edges_from(edges)
-        st.write(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
-
-        # Export options
-        export_graph(G)
+                export_graph(G)
+            except Exception as e:
+                st.error("Failed to create the network graph.")
 
 def export_graph(G):
     st.subheader("Export Network Graph")
