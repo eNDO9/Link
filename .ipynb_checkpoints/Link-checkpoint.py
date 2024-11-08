@@ -12,8 +12,11 @@ def main():
         # Reset all session state variables when a new file is uploaded or the file is removed
         st.session_state.clear()
         st.session_state.last_uploaded_file = uploaded_file
+        st.session_state.skip_rows = 0  # Reset skip rows to 0
 
-    skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
+    # Use session state to track skip rows and set default to 0 if not set
+    skip_rows = st.number_input("Number of rows to skip", min_value=0, value=st.session_state.get("skip_rows", 0), step=1)
+    st.session_state.skip_rows = skip_rows  # Update session state with current skip_rows value
 
     if uploaded_file is not None:
         # Displaying CSV preview immediately based on `skip_rows`
