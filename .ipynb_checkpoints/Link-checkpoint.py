@@ -82,11 +82,14 @@ def main():
                 # Add edges to the graph
                 edges = st.session_state.df[[st.session_state.source_column, st.session_state.target_column]].values.tolist()
                 G.add_edges_from(edges)
-                st.write(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
-
-                export_graph(G)
+                st.session_state.graph = G  # Store the created graph in session state
+                st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
             except Exception as e:
                 st.error("Failed to create the network graph.")
+
+        # Export options only if a graph has been created
+        if "graph" in st.session_state:
+            export_graph(st.session_state.graph)
 
 def export_graph(G):
     st.subheader("Export Network Graph")
@@ -103,6 +106,7 @@ def export_graph(G):
         gexf_data.seek(0)
         return gexf_data
 
+    # Show download buttons
     export_format = st.selectbox("Choose export format", ["CSV (Nodes and Edges)", "GEXF"])
 
     if export_format == "CSV (Nodes and Edges)":
