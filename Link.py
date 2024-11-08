@@ -24,8 +24,8 @@ def main():
             st.subheader("CSV Data Preview (first 50 rows)")
             st.write(preview_df)
 
-            # Option to load the CSV strictly
-            if st.button("Proceed to Column Selection"):
+            # Button to load the CSV strictly
+            if st.button("Load CSV"):
                 load_and_select_columns(uploaded_file, skip_rows)
         except Exception as e:
             st.warning("Error loading file. Try adjusting the rows to skip.")
@@ -55,6 +55,8 @@ def load_and_select_columns(uploaded_file, skip_rows):
             st.error("Error: Selected columns not found in the data.")
     except Exception as e:
         st.error("Failed to load the full dataset. Please check the file format and try again.")
+        # Stop further execution to avoid unexpected behavior if dataset loading fails
+        return
 
 def create_and_export_graph(df, source_column, target_column):
     st.header("Step 3: Create and Export Network Graph")
