@@ -29,6 +29,7 @@ def step1_upload_and_preview():
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
     if uploaded_file is not None:
+<<<<<<< HEAD
         # Read first 50 lines as raw text for display preview
         try:
             # Decode the file and skip rows as needed, then split into lines
@@ -40,18 +41,30 @@ def step1_upload_and_preview():
             preview_df = pd.read_csv(preview_data, error_bad_lines=False)  # Load as DataFrame, ignore errors
             st.subheader("CSV Data Preview (first 50 rows)")
             st.write(preview_df)  # Display the DataFrame preview
+=======
+        try:
+            # Display a preview with error handling to ignore problematic lines
+            preview_df = pd.read_csv(
+                StringIO(uploaded_file.getvalue().decode("utf-8")),
+                skiprows=skip_rows,
+                nrows=50,  # Limit to 50 rows for preview
+                #on_bad_lines='skip'  # Skip bad lines for preview
+                error_bad_lines=False
+            )
+            st.subheader("CSV Data Preview (first 50 rows)")
+            st.write(preview_df.head(50))
+>>>>>>> parent of f31c326 (fixed preview 1)
 
-            # Button to load the full CSV strictly, with error handling off
+            # Option to load the CSV without error handling for full data processing
             if st.button("Load CSV"):
-                # Strictly load the full data to ensure all rows are properly formatted
+                # Load the CSV fully without skipping errors to enforce data integrity
                 st.session_state.df = pd.read_csv(
                     StringIO(content),
                     skiprows=skip_rows
                 )
                 st.session_state.step = 2  # Move to the next step
         except Exception as e:
-            st.warning("Error loading file. Please try adjusting the rows to skip.")
-            st.stop()  # Stop execution to avoid proceeding with incorrect data
+            st.warning("Error loading file. Try adjusting the rows to skip.")
 
 def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
