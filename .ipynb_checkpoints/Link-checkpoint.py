@@ -56,26 +56,20 @@ def main():
     if "source_column" in st.session_state and "target_column" in st.session_state:
         st.subheader("Step 3: Create and Export Network Graph")
 
-        # Detect change in graph type selection
-        if "graph_type" not in st.session_state:
-            st.session_state.graph_type = "Directed"  # Default graph type
-
-        # Graph type selection
-        graph_type = st.selectbox(
-            "Select Graph Type",
-            ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
-            index=["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"].index(st.session_state.graph_type),
-            help=("Directed: One-way relationships.\n"
-                  "Undirected: Mutual relationships.\n"
-                  "Multi-Directed: Directed graph allowing multiple edges.\n"
-                  "Multi-Undirected: Undirected graph allowing multiple edges.")
-        )
-
-        # Reset graph if graph type is changed
-        if graph_type != st.session_state.graph_type:
-            if "graph" in st.session_state:
-                del st.session_state.graph  # Remove existing graph if graph type changes
-            st.session_state.graph_type = graph_type  # Update to new graph type
+        # Graph type selection with error-catching
+        try:
+            graph_type = st.selectbox(
+                "Select Graph Type",
+                ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
+                help=("Directed: One-way relationships.\n"
+                      "Undirected: Mutual relationships.\n"
+                      "Multi-Directed: Directed graph allowing multiple edges.\n"
+                      "Multi-Undirected: Undirected graph allowing multiple edges.")
+            )
+            st.session_state.graph_type = graph_type  # Track graph type in session state
+        except Exception:
+            # Catch and ignore errors related to changing graph type
+            pass
 
         # Button to create the network graph
         if st.button("Create Network Graph"):
@@ -97,9 +91,15 @@ def main():
                 # Store the created graph in session state
                 st.session_state.graph = G  
                 
-                st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
+                # Save a success message in session state to persist across Step 3
+                st.session_state.success_message = f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges."
+                st.success(st.session_state.success_message)
             except Exception as e:
                 st.error("Failed to create the network graph.")
+
+        # Display the success message if the graph is already created
+        if "success_message" in st.session_state:
+            st.success(st.session_state.success_message)
 
         # Export options only if a graph has been created
         if "graph" in st.session_state:
@@ -127,8 +127,8 @@ def export_graph(G, graph_type):
             st.warning("The graph has no edges to export in GEXF format.")
             return None
 
-    # Show download buttons
-    export_format = st.selectbox("Choose export format", ["CSV (Nodes and Edges)", "GEXF"])
+    # Set GEXF as the default export format
+    export_format = st.selectbox("Choose export format", ["GEXF", "CSV (Nodes and Edges)"])
 
     if export_format == "CSV (Nodes and Edges)":
         nodes_df, edges_df = to_csv(G, graph_type)
