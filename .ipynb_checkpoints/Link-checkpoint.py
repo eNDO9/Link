@@ -3,55 +3,43 @@ import pandas as pd
 import networkx as nx
 from io import StringIO, BytesIO
 
-# Initialize session state variables
-if "step" not in st.session_state:
-    st.session_state.step = 1
-if "df" not in st.session_state:
-    st.session_state.df = None
-if "source_column" not in st.session_state:
-    st.session_state.source_column = None
-if "target_column" not in st.session_state:
-    st.session_state.target_column = None
-
 def main():
     st.title("Network Graph Creator")
 
-    if st.session_state.step == 1:
-        step1_upload_and_preview()
-    elif st.session_state.step == 2:
-        step2_select_columns()
-    elif st.session_state.step == 3:
-        step3_create_and_export_graph()
-
-def step1_upload_and_preview():
+    # Step 1: Upload and Preview CSV
     st.header("Step 1: Upload CSV File")
-
-    # File uploader and row skip option
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
-
-    if uploaded_file is not None:
-        try:
-            # Show a preview of the CSV with skip rows applied
-            preview_df = pd.read_csv(
-                StringIO(uploaded_file.getvalue().decode("utf-8")),
-                skiprows=skip_rows,
-                nrows=50,
-                on_bad_lines='skip'
-            )
-            st.subheader("CSV Data Preview (first 50 rows)")
-            st.write(preview_df)
-
-            # Load CSV data into session_state on button click
-            if st.button("Load CSV"):
-                st.session_state.df = pd.read_csv(
+    
+    # Check if the CSV has already been loaded into session_state
+    if "df" not in st.session_state:
+        uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+        skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
+        
+        # Display the CSV preview as part of Step 1
+        if uploaded_file is not None:
+            try:
+                # Load and display a preview of the first 50 rows
+                preview_df = pd.read_csv(
                     StringIO(uploaded_file.getvalue().decode("utf-8")),
                     skiprows=skip_rows,
+                    nrows=50,
                     on_bad_lines='skip'
                 )
-                st.session_state.step = 2  # Move to the next step
-        except Exception as e:
-            st.warning("Error loading file. Try adjusting the rows to skip.")
+                st.subheader("CSV Data Preview (first 50 rows)")
+                st.write(preview_df)
+
+                # Load full CSV and save it in session_state when "Load CSV" is clicked
+                if st.button("Load CSV"):
+                    st.session_state.df = pd.read_csv(
+                        StringIO(uploaded_file.getvalue().decode("utf-8")),
+                        skiprows=skip_rows,
+                        on_bad_lines='skip'
+                    )
+                    st.session_state.step = 2  # Proceed to Step 2
+            except Exception as e:
+                st.warning("Error loading file. Try adjusting the rows to skip.")
+    else:
+        # Proceed to Step 2 if the DataFrame is already loaded
+        step2_select_columns()
 
 def step2_select_columns():
     st.header("Step 2: Select Columns for the Graph")
@@ -64,16 +52,20 @@ def step2_select_columns():
 
     # Column selection
     columns = df.columns.tolist()
-    st.session_state.source_column = st.selectbox("Select Source column", columns, index=0)
-    st.session_state.target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
+    source_column = st.selectbox("Select Source column", columns, index=0, key="source_column")
+    target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0, key="target_column")
 
     # Display preview of selected columns as edges
     st.subheader("Preview of Selected Columns for Network (first 50 rows)")
-    st.write(df[[st.session_state.source_column, st.session_state.target_column]].head(50))
+    st.write(df[[source_column, target_column]].head(50))
 
     # Button to move to Step 3 and create the network graph
     if st.button("Create Network Graph"):
+        # Set `session_state` values after confirming selections, minimizing errors
         st.session_state.step = 3
+        st.session_state.source_column = source_column
+        st.session_state.target_column = target_column
+        step3_create_and_export_graph()  # Directly call the next step function
 
 def step3_create_and_export_graph():
     st.header("Step 3: Create and Export Network Graph")
