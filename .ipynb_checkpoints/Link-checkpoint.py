@@ -3,6 +3,11 @@ import pandas as pd
 import networkx as nx
 from io import StringIO, BytesIO
 
+# Cache the CSV loading function to avoid reloading on reruns
+@st.cache_data
+def load_full_csv(file, skip_rows):
+    return pd.read_csv(StringIO(file.getvalue().decode("utf-8")), skiprows=skip_rows, on_bad_lines='skip')
+
 def main():
     st.title("Network Graph Creator")
     
@@ -14,47 +19,38 @@ def main():
     # Display the CSV preview as part of Step 1
     if uploaded_file is not None:
         try:
-            # Load and display the preview
+            # Load and display a preview of the first 50 rows
             preview_df = pd.read_csv(
                 StringIO(uploaded_file.getvalue().decode("utf-8")),
                 skiprows=skip_rows,
                 nrows=50,
-                on_bad_lines='skip'  # Skip any problematic rows for preview
+                on_bad_lines='skip'
             )
             st.subheader("CSV Data Preview (first 50 rows)")
             st.write(preview_df)
 
-            # Load full CSV and proceed to Step 2 upon button click
+            # Proceed to Step 2 upon clicking "Load CSV"
             if st.button("Load CSV"):
-                load_and_select_columns(uploaded_file, skip_rows)
+                df = load_full_csv(uploaded_file, skip_rows)
+                step2_select_columns(df)
         except Exception as e:
             st.warning("Error loading file. Try adjusting the rows to skip.")
 
-def load_and_select_columns(uploaded_file, skip_rows):
+def step2_select_columns(df):
     st.header("Step 2: Select Columns for the Graph")
 
-    try:
-        # Load the full dataset for column selection
-        df = pd.read_csv(
-            StringIO(uploaded_file.getvalue().decode("utf-8")),
-            skiprows=skip_rows,
-            on_bad_lines='skip'  # Skip any problematic rows in the full dataset
-        )
+    # Column selection
+    columns = df.columns.tolist()
+    source_column = st.selectbox("Select Source column", columns, index=0, key="source_column")
+    target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0, key="target_column")
 
-        # Column selection
-        columns = df.columns.tolist()
-        source_column = st.selectbox("Select Source column", columns, index=0)
-        target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
+    # Display preview of selected columns as edges
+    st.subheader("Preview of Selected Columns for Network (first 50 rows)")
+    st.write(df[[source_column, target_column]].head(50))
 
-        # Display preview of selected columns as edges
-        st.subheader("Preview of Selected Columns for Network (first 50 rows)")
-        st.write(df[[source_column, target_column]].head(50))
-
-        # Button to create the network graph
-        if st.button("Create Network Graph"):
-            create_and_export_graph(df, source_column, target_column)
-    except Exception as e:
-        st.warning("Error loading file. Try adjusting the rows to skip.")
+    # Button to move to Step 3 and create the network graph
+    if st.button("Create Network Graph"):
+        create_and_export_graph(df, source_column, target_column)
 
 def create_and_export_graph(df, source_column, target_column):
     st.header("Step 3: Create and Export Network Graph")
