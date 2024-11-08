@@ -11,10 +11,24 @@ def main():
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
 
-    # A button to load CSV and proceed to column selection
+    # Display the CSV preview as part of Step 1
     if uploaded_file is not None:
-        if st.button("Load CSV"):
-            load_and_select_columns(uploaded_file, skip_rows)
+        try:
+            # Load and display the preview
+            preview_df = pd.read_csv(
+                StringIO(uploaded_file.getvalue().decode("utf-8")),
+                skiprows=skip_rows,
+                nrows=50,
+                on_bad_lines='skip'  # Skip any problematic rows for preview
+            )
+            st.subheader("CSV Data Preview (first 50 rows)")
+            st.write(preview_df)
+
+            # Load full CSV and proceed to Step 2 upon button click
+            if st.button("Load CSV"):
+                load_and_select_columns(uploaded_file, skip_rows)
+        except Exception as e:
+            st.warning("Error loading file. Try adjusting the rows to skip.")
 
 def load_and_select_columns(uploaded_file, skip_rows):
     st.header("Step 2: Select Columns for the Graph")
@@ -26,10 +40,6 @@ def load_and_select_columns(uploaded_file, skip_rows):
             skiprows=skip_rows,
             on_bad_lines='skip'  # Skip any problematic rows in the full dataset
         )
-        
-        # Show the full dataset preview (first 50 rows)
-        st.subheader("CSV Data Preview (first 50 rows)")
-        st.write(df.head(50))
 
         # Column selection
         columns = df.columns.tolist()
