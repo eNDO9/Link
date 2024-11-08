@@ -56,15 +56,26 @@ def main():
     if "source_column" in st.session_state and "target_column" in st.session_state:
         st.subheader("Step 3: Create and Export Network Graph")
 
+        # Detect change in graph type selection
+        if "graph_type" not in st.session_state:
+            st.session_state.graph_type = "Directed"  # Default graph type
+
         # Graph type selection
         graph_type = st.selectbox(
             "Select Graph Type",
             ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
+            index=["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"].index(st.session_state.graph_type),
             help=("Directed: One-way relationships.\n"
                   "Undirected: Mutual relationships.\n"
                   "Multi-Directed: Directed graph allowing multiple edges.\n"
                   "Multi-Undirected: Undirected graph allowing multiple edges.")
         )
+
+        # Reset graph if graph type is changed
+        if graph_type != st.session_state.graph_type:
+            if "graph" in st.session_state:
+                del st.session_state.graph  # Remove existing graph if graph type changes
+            st.session_state.graph_type = graph_type  # Update to new graph type
 
         # Button to create the network graph
         if st.button("Create Network Graph"):
@@ -97,18 +108,13 @@ def main():
 def export_graph(G, graph_type):
     st.subheader("Export Network Graph")
 
-    # Function to convert NetworkX graph to CSVs or GEXF for download
+    # Updated to_csv function without "Key" column for Multi-graphs
     def to_csv(G, graph_type):
-        # Convert nodes to a DataFrame
         nodes_df = pd.DataFrame(G.nodes, columns=["Node"]) if G.number_of_nodes() > 0 else pd.DataFrame(columns=["Node"])
-
-        # Convert edges to a DataFrame, handling MultiGraph/MultiDiGraph without a "Key" column
         if "Multi" in graph_type:
-            # Flatten edges without including the key for multi-graphs
             edges_df = pd.DataFrame([(u, v) for u, v, _ in G.edges(keys=True)], columns=["Source", "Target"])
         else:
             edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
-
         return nodes_df, edges_df
 
     def to_gexf(G):
@@ -131,7 +137,7 @@ def export_graph(G, graph_type):
             st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
         if not edges_df.empty:
             edges_csv = edges_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv", mime="text/csv")
+            st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv")
 
     elif export_format == "GEXF":
         gexf_data = to_gexf(G)
