@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import networkx as nx
 from io import StringIO, BytesIO
-import re
 
 def main():
     st.title("Network Graph Creator")
@@ -13,6 +12,7 @@ def main():
 
     if uploaded_file is not None:
         # Displaying CSV preview immediately based on `skip_rows`
+        preview_df = None
         try:
             preview_df = pd.read_csv(
                 StringIO(uploaded_file.getvalue().decode("utf-8")),
@@ -25,7 +25,7 @@ def main():
         except Exception as e:
             st.warning("Error loading file. Try adjusting the rows to skip.")
 
-        # Load CSV on button click
+        # Full DataFrame loading on "Load CSV" button click
         if st.button("Load CSV"):
             try:
                 st.session_state.df = pd.read_csv(
@@ -44,48 +44,39 @@ def main():
         source_column = st.selectbox("Select Source column", columns, index=0)
         target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
 
+        # Display preview of selected columns
+        st.subheader("Preview of Selected Columns for Network (first 50 rows)")
+        st.write(st.session_state.df[[source_column, target_column]].head(50))
+
         # Save column selections in session state
         st.session_state.source_column = source_column
         st.session_state.target_column = target_column
 
-        # Step 3a: Process Columns
-        st.subheader("Step 3a: Process Columns")
+    # Step 2.5: Process Columns
+    if "source_column" in st.session_state and "target_column" in st.session_state:
+        if st.button("Process Columns"):
+            processed_df = process_columns(st.session_state.df, st.session_state.source_column, st.session_state.target_column)
+            st.session_state.processed_df = processed_df  # Store the processed DataFrame
+            st.success("Columns processed successfully!")
+            # Display preview of the processed data
+            st.subheader("Processed Data Preview for Network (first 50 rows)")
+            st.write(processed_df[[st.session_state.source_column, st.session_state.target_column]].head(50))
 
-        def process_column(df, column, method):
-            """Process a column based on the selected method."""
-            if method == "No Processing":
-                return df[column].str.lower()
-            elif method == "Comma-Separated List":
-                return df[column].str.lower().str.split(',')
-            elif method == "Free Text - Hashtags":
-                return df[column].str.lower().apply(lambda x: re.findall(r"#\w+", str(x)))
-            elif method == "Free Text - Mentions":
-                # Extract mentions without the '@' symbol
-                return df[column].str.lower().apply(lambda x: [mention[1:] for mention in re.findall(r"@\w+", str(x))])
-            elif method == "Free Text - URLs":
-                # Extract domains only from URLs
-                return df[column].str.lower().apply(lambda x: re.findall(r"https?://(?:www\.)?([^/]+)", str(x)))
-            else:
-                return df[column].str.lower()
+    # Step 3: Create and Export Network Graph
+    if "processed_df" in st.session_state:
+        st.subheader("Step 3: Create and Export Network Graph")
 
-        # Processing options
-        source_processing = st.selectbox("Process Source Column", ["No Processing", "Comma-Separated List", "Free Text - Hashtags", "Free Text - Mentions", "Free Text - URLs"])
-        target_processing = st.selectbox("Process Target Column", ["No Processing", "Comma-Separated List", "Free Text - Hashtags", "Free Text - Mentions", "Free Text - URLs"])
-
-        # Apply processing and show preview
-        processed_source = process_column(st.session_state.df, source_column, source_processing)
-        processed_target = process_column(st.session_state.df, target_column, target_processing)
-        
-        # Display processed preview
-        st.subheader("Preview of Processed Columns for Network (first 50 rows)")
-        st.write(pd.DataFrame({source_column: processed_source, target_column: processed_target}).head(50))
-
-        # Step 3b: Create and Export Network Graph
-        st.subheader("Step 3b: Create and Export Network Graph")
-        
         # Graph type selection
-        graph_type = st.selectbox("Select Graph Type", ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"])
+        graph_type = st.selectbox(
+            "Select Graph Type",
+            ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
+            help=("Directed: One-way relationships.\n"
+                  "Undirected: Mutual relationships.\n"
+                  "Multi-Directed: Directed graph allowing multiple edges.\n"
+                  "Multi-Undirected: Undirected graph allowing multiple edges.")
+        )
 
+        # Button to create the network graph
         if st.button("Create Network Graph"):
             try:
                 # Initialize the appropriate NetworkX graph
@@ -98,36 +89,53 @@ def main():
                 elif graph_type == "Multi-Undirected":
                     G = nx.MultiGraph()
 
-                # Add edges from processed columns
-                for source, target in zip(processed_source, processed_target):
-                    if isinstance(source, list) and isinstance(target, list):
-                        for s in source:
-                            for t in target:
-                                G.add_edge(s, t)
-                    elif isinstance(source, list):
-                        for s in source:
-                            G.add_edge(s, target)
-                    elif isinstance(target, list):
-                        for t in target:
-                            G.add_edge(source, t)
-                    else:
-                        G.add_edge(source, target)
-
-                # Display graph summary
-                st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
-                st.session_state.graph = G
+                # Add edges to the graph from the processed DataFrame
+                edges = st.session_state.processed_df[[st.session_state.source_column, st.session_state.target_column]].values.tolist()
+                G.add_edges_from(edges)
+                
+                # Store the created graph in session state
+                st.session_state.graph = G  
+                
+                # Save a success message in session state to persist across Step 3
+                st.session_state.success_message = f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges."
+                st.success(st.session_state.success_message)
             except Exception as e:
                 st.error("Failed to create the network graph.")
 
-        # Export options (similar to before)
+        # Display the success message if the graph is already created
+        if "success_message" in st.session_state:
+            st.success(st.session_state.success_message)
+
+        # Export options only if a graph has been created
         if "graph" in st.session_state:
             export_graph(st.session_state.graph, graph_type)
 
+def process_columns(df, source_column, target_column):
+    """Process data for network graph by exploding, dropping empty rows, and removing self-loops."""
+    # Explode lists in the Source and Target columns if they contain lists
+    if df[source_column].apply(lambda x: isinstance(x, list)).any():
+        df = df.explode(source_column)
+    if df[target_column].apply(lambda x: isinstance(x, list)).any():
+        df = df.explode(target_column)
+
+    # Drop rows where either Source or Target is empty (None or NaN)
+    df = df.dropna(subset=[source_column, target_column])
+
+    # Remove self-loops where Source == Target
+    df = df[df[source_column] != df[target_column]]
+
+    return df
+
 def export_graph(G, graph_type):
     st.subheader("Export Network Graph")
+
+    # to_csv function without "Key" column for Multi-graphs
     def to_csv(G, graph_type):
         nodes_df = pd.DataFrame(G.nodes, columns=["Node"]) if G.number_of_nodes() > 0 else pd.DataFrame(columns=["Node"])
-        edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
+        if "Multi" in graph_type:
+            edges_df = pd.DataFrame([(u, v) for u, v, _ in G.edges(keys=True)], columns=["Source", "Target"])
+        else:
+            edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
         return nodes_df, edges_df
 
     def to_gexf(G):
@@ -140,14 +148,18 @@ def export_graph(G, graph_type):
             st.warning("The graph has no edges to export in GEXF format.")
             return None
 
+    # Set GEXF as the default export format
     export_format = st.selectbox("Choose export format", ["GEXF", "CSV (Nodes and Edges)"])
 
     if export_format == "CSV (Nodes and Edges)":
         nodes_df, edges_df = to_csv(G, graph_type)
-        nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
-        edges_csv = edges_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
-        st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv")
+        if not nodes_df.empty:
+            nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
+            st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
+        if not edges_df.empty:
+            edges_csv = edges_df.to_csv(index=False).encode('utf-8')
+            st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv")
+
     elif export_format == "GEXF":
         gexf_data = to_gexf(G)
         if gexf_data:
