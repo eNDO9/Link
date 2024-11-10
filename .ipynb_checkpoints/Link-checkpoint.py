@@ -60,9 +60,11 @@ def main():
             elif method == "Free Text - Hashtags":
                 return df[column].str.lower().apply(lambda x: re.findall(r"#\w+", str(x)))
             elif method == "Free Text - Mentions":
-                return df[column].str.lower().apply(lambda x: re.findall(r"@\w+", str(x)))
+                # Extract mentions without the '@' symbol
+                return df[column].str.lower().apply(lambda x: [mention[1:] for mention in re.findall(r"@\w+", str(x))])
             elif method == "Free Text - URLs":
-                return df[column].str.lower().apply(lambda x: re.findall(r"http\S+", str(x)))
+                # Extract domains only from URLs
+                return df[column].str.lower().apply(lambda x: re.findall(r"https?://(?:www\.)?([^/]+)", str(x)))
             else:
                 return df[column].str.lower()
 
