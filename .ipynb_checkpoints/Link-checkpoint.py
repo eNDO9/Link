@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import networkx as nx
 from io import StringIO, BytesIO
+import re
+from urllib.parse import urlparse
 
 def main():
     st.title("Network Graph Creator")
@@ -39,23 +41,36 @@ def main():
 
     # Step 2: Column Selection
     if "df" in st.session_state:
-        st.subheader("Step 2: Select Columns for the Graph")
+        st.subheader("Step 2: Select Columns and Processing Method")
         columns = st.session_state.df.columns.tolist()
         source_column = st.selectbox("Select Source column", columns, index=0)
         target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
+
+        # Processing options for each column
+        processing_options = ["No Processing", "Hashtags", "Domains", "Mentioned Authors (remove @)"]
+        source_processing = st.selectbox("Select Processing for Source column", processing_options)
+        target_processing = st.selectbox("Select Processing for Target column", processing_options)
+
+        # Save selections in session state
+        st.session_state.source_column = source_column
+        st.session_state.target_column = target_column
+        st.session_state.source_processing = source_processing
+        st.session_state.target_processing = target_processing
 
         # Display preview of selected columns
         st.subheader("Preview of Selected Columns for Network (first 50 rows)")
         st.write(st.session_state.df[[source_column, target_column]].head(50))
 
-        # Save column selections in session state
-        st.session_state.source_column = source_column
-        st.session_state.target_column = target_column
-
     # Step 2.5: Process Columns
     if "source_column" in st.session_state and "target_column" in st.session_state:
         if st.button("Process Columns"):
-            processed_df = process_columns(st.session_state.df, st.session_state.source_column, st.session_state.target_column)
+            processed_df = process_columns(
+                st.session_state.df, 
+                st.session_state.source_column, 
+                st.session_state.target_column, 
+                st.session_state.source_processing, 
+                st.session_state.target_processing
+            )
             st.session_state.processed_df = processed_df  # Store the processed DataFrame
             st.success("Columns processed successfully!")
             # Display preview of the processed data
@@ -110,8 +125,11 @@ def main():
         if "graph" in st.session_state:
             export_graph(st.session_state.graph, graph_type)
 
-def process_columns(df, source_column, target_column):
-    """Process data for network graph by exploding, dropping empty rows, and removing self-loops."""
+def process_columns(df, source_column, target_column, source_processing, target_processing):
+    """Process data for network graph by applying specified processing options, exploding lists, dropping empty rows, and removing self-loops."""
+    df[source_column] = apply_processing(df[source_column], source_processing)
+    df[target_column] = apply_processing(df[target_column], target_processing)
+
     # Explode lists in the Source and Target columns if they contain lists
     if df[source_column].apply(lambda x: isinstance(x, list)).any():
         df = df.explode(source_column)
@@ -125,6 +143,18 @@ def process_columns(df, source_column, target_column):
     df = df[df[source_column] != df[target_column]]
 
     return df
+
+def apply_processing(column, processing_type):
+    """Apply the selected processing type to a column."""
+    if processing_type == "No Processing":
+        return column.str.lower()
+    elif processing_type == "Hashtags":
+        return column.str.findall(r"#\w+").str.lower()  # Extract hashtags and lowercase
+    elif processing_type == "Domains":
+        return column.apply(lambda x: urlparse(x).netloc if pd.notnull(x) else None).str.lower()  # Extract domain and lowercase
+    elif processing_type == "Mentioned Authors (remove @)":
+        return column.str.findall(r"@(\w+)").apply(lambda x: [mention.lower() for mention in x] if isinstance(x, list) else x)  # Extract and lowercase without '@'
+    return column
 
 def export_graph(G, graph_type):
     st.subheader("Export Network Graph")
