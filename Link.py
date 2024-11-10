@@ -71,9 +71,11 @@ def main():
         target_processing = st.selectbox("Process Target Column", ["No Processing", "Comma-Separated List", "Free Text - Hashtags", "Free Text - Mentions", "Free Text - URLs"])
 
         # Apply processing and show preview
-        st.subheader("Preview of Processed Columns (first 50 rows)")
         processed_source = process_column(st.session_state.df, source_column, source_processing)
         processed_target = process_column(st.session_state.df, target_column, target_processing)
+        
+        # Display processed preview
+        st.subheader("Preview of Processed Columns for Network (first 50 rows)")
         st.write(pd.DataFrame({source_column: processed_source, target_column: processed_target}).head(50))
 
         # Step 3b: Create and Export Network Graph
