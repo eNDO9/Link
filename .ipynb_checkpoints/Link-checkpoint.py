@@ -149,11 +149,13 @@ def apply_processing(column, processing_type):
     if processing_type == "No Processing":
         return column.str.lower()
     elif processing_type == "Hashtags":
-        return column.str.findall(r"#\w+").str.lower()  # Extract hashtags and lowercase
+        return column.str.findall(r"#\w+").apply(lambda x: [tag.lower() for tag in x] if isinstance(x, list) else x)
     elif processing_type == "Domains":
-        return column.apply(lambda x: urlparse(x).netloc if pd.notnull(x) else None).str.lower()  # Extract domain and lowercase
+        return column.apply(lambda x: urlparse(x).netloc if pd.notnull(x) else None).str.lower()
     elif processing_type == "Mentioned Authors (remove @)":
-        return column.str.findall(r"@(\w+)").apply(lambda x: [mention.lower() for mention in x] if isinstance(x, list) else x)  # Extract and lowercase without '@'
+        return column.str.findall(r"@(\w+)").apply(lambda x: [mention.lower() for mention in x] if isinstance(x, list) else x)
+    elif processing_type == "Comma Separated List":
+        return column.str.split(",").apply(lambda x: [item.strip().lower() for item in x] if isinstance(x, list) else x)
     return column
 
 def export_graph(G, graph_type):
