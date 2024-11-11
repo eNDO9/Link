@@ -47,7 +47,7 @@ def main():
         target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
 
         # Processing options for each column
-        processing_options = ["No Processing", "Hashtags", "Domains", "Mentioned Authors (remove @)", "Comma Separated List"]
+        processing_options = ["No Processing", "Hashtags", "Domains", "Mentioned Authors", "Comma Separated List"]
         source_processing = st.selectbox("Select Processing for Source column", processing_options)
         target_processing = st.selectbox("Select Processing for Target column", processing_options)
 
@@ -152,7 +152,7 @@ def apply_processing(column, processing_type):
         return column.str.findall(r"#\w+").apply(lambda x: [tag.lower() for tag in x] if isinstance(x, list) else x)
     elif processing_type == "Domains":
         return column.apply(lambda x: urlparse(x).netloc if pd.notnull(x) else None).str.lower()
-    elif processing_type == "Mentioned Authors (remove @)":
+    elif processing_type == "Mentioned Authors":
         return column.str.findall(r"@(\w+)").apply(lambda x: [mention.lower() for mention in x] if isinstance(x, list) else x)
     elif processing_type == "Comma Separated List":
         return column.str.split(",").apply(lambda x: [item.strip().lower() for item in x] if isinstance(x, list) else x)
