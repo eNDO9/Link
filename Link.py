@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 def main():
     st.title("Link")
-    st.write("This tool creates a network graph from an imported csv")
+    st.markdown("<p style='font-size:20px'>This tool creates a network graph from an imported CSV.</p>", unsafe_allow_html=True)
 
     # Step 1: File Upload and Preview
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -87,53 +87,37 @@ def main():
             st.subheader("Processed Data Preview for Network (first 50 rows)")
             st.write(processed_df[[st.session_state.source_column, st.session_state.target_column]].head(50))
 
-    # Step 3: Create and Export Network Graph
-    if "processed_df" in st.session_state:
-        st.subheader("Step 3: Create and Export Network Graph")
+    # Button to create the network graph
+    if st.button("Create Network Graph"):
+        try:
+            # Initialize the appropriate NetworkX graph
+            if graph_type == "Directed":
+                G = nx.DiGraph()
+            elif graph_type == "Undirected":
+                G = nx.Graph()
+            elif graph_type == "Multi-Directed":
+                G = nx.MultiDiGraph()
+            elif graph_type == "Multi-Undirected":
+                G = nx.MultiGraph()
 
-        # Graph type selection
-        graph_type = st.selectbox(
-            "Select Graph Type",
-            ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
-            help=("Directed: One-way relationships.\n"
-                  "Undirected: Mutual relationships.\n"
-                  "Multi-Directed: Directed graph allowing multiple edges.\n"
-                  "Multi-Undirected: Undirected graph allowing multiple edges.")
-        )
+            # Add edges to the graph from the processed DataFrame
+            edges = st.session_state.processed_df[[st.session_state.source_column, st.session_state.target_column]].values.tolist()
+            G.add_edges_from(edges)
 
-        # Button to create the network graph
-        if st.button("Create Network Graph"):
-            try:
-                # Initialize the appropriate NetworkX graph
-                if graph_type == "Directed":
-                    G = nx.DiGraph()
-                elif graph_type == "Undirected":
-                    G = nx.Graph()
-                elif graph_type == "Multi-Directed":
-                    G = nx.MultiDiGraph()
-                elif graph_type == "Multi-Undirected":
-                    G = nx.MultiGraph()
+            # Store the created graph in session state
+            st.session_state.graph = G  
 
-                # Add edges to the graph from the processed DataFrame
-                edges = st.session_state.processed_df[[st.session_state.source_column, st.session_state.target_column]].values.tolist()
-                G.add_edges_from(edges)
-                
-                # Store the created graph in session state
-                st.session_state.graph = G  
-                
-                # Save a success message in session state to persist across Step 3
-                st.session_state.success_message = f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges."
-                st.success(st.session_state.success_message)
-            except Exception as e:
-                st.error("Failed to create the network graph.")
+            # Only save the success message once
+            st.session_state.success_message = f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges."
+        except Exception as e:
+            st.error("Failed to create the network graph.")
 
-        # Display the success message if the graph is already created
-        if "success_message" in st.session_state:
-            st.success(st.session_state.success_message)
+    # Display the success message once, only when the graph is created
+    if "success_message" in st.session_state and st.session_state.success_message:
+        st.success(st.session_state.success_message)
+        # Clear the success message after displaying it once
+        st.session_state.success_message = None
 
-        # Export options only if a graph has been created
-        if "graph" in st.session_state:
-            export_graph(st.session_state.graph, graph_type)
 
 def process_columns(df, source_column, target_column, source_processing, target_processing):
     """Process data for network graph by applying specified processing options, exploding lists, dropping empty rows, and removing self-loops."""
