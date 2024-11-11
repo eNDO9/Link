@@ -6,7 +6,8 @@ import re
 from urllib.parse import urlparse
 
 def main():
-    st.title("Network Graph Creator")
+    st.title("Link")
+    st.write("This tool creates a network graph from an imported csv")
 
     # Step 1: File Upload and Preview
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
