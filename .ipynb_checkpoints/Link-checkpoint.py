@@ -47,7 +47,7 @@ def main():
         target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
 
         # Processing options for each column
-        processing_options = ["No Processing", "Hashtags", "Domains", "Mentioned Authors (remove @)"]
+        processing_options = ["No Processing", "Hashtags", "Domains", "Mentioned Authors (remove @)", "Comma Separated List"]
         source_processing = st.selectbox("Select Processing for Source column", processing_options)
         target_processing = st.selectbox("Select Processing for Target column", processing_options)
 
