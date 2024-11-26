@@ -7,38 +7,64 @@ from urllib.parse import urlparse
 
 def main():
     st.title("Link")
-    st.markdown("<p style='font-size:20px'>This tool creates a network graph from an imported CSV.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:20px'>This tool creates a network graph from imported CSVs.</p>", unsafe_allow_html=True)
 
-    # Step 1: File Upload and Preview
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    skip_rows = st.number_input("Number of rows to skip", min_value=0, value=0, step=1)
+    # Step 1: Upload Multiple Files
+    uploaded_files = st.file_uploader("Upload CSV files", type="csv", accept_multiple_files=True)
 
-    if uploaded_file is not None:
-        # Displaying CSV preview immediately based on `skip_rows`
-        preview_df = None
-        try:
-            preview_df = pd.read_csv(
-                StringIO(uploaded_file.getvalue().decode("utf-8")),
-                skiprows=skip_rows,
-                nrows=50,
-                on_bad_lines='skip'
+    if uploaded_files:
+        st.subheader("Adjust Settings and Preview Data")
+        rows_to_skip = {}  # Store rows-to-skip values for each file
+        previews = {}      # Store dynamic previews for each file
+
+        # Step 1.1: Iterate through files to allow individual adjustments
+        for file in uploaded_files:
+            # User input for rows to skip
+            rows_to_skip[file.name] = st.number_input(
+                f"Rows to skip for {file.name}", min_value=0, value=0, step=1, key=f"skip_{file.name}"
             )
-            st.subheader("CSV Data Preview (first 50 rows)")
-            st.write(preview_df)
-        except Exception as e:
-            st.warning("Error loading file. Try adjusting the rows to skip.")
 
-        # Full DataFrame loading on "Load CSV" button click
-        if st.button("Load CSV"):
+            # Dynamic preview based on rows-to-skip
             try:
-                st.session_state.df = pd.read_csv(
-                    StringIO(uploaded_file.getvalue().decode("utf-8")),
-                    skiprows=skip_rows,
-                    on_bad_lines='skip'
+                preview_df = pd.read_csv(
+                    StringIO(file.getvalue().decode("utf-8")),
+                    skiprows=rows_to_skip[file.name],
+                    nrows=10,  # Only preview the first 10 rows
+                    on_bad_lines="skip"
                 )
-                st.success("CSV loaded successfully!")
+                previews[file.name] = preview_df
             except Exception as e:
-                st.error("Failed to load the full dataset. Please check the file format and try again.")
+                previews[file.name] = None
+                st.warning(f"Error loading preview for {file.name}. Adjust rows to skip.")
+
+            # Display preview or error message
+            st.write(f"Preview of {file.name} (adjusted for {rows_to_skip[file.name]} rows skipped):")
+            if previews[file.name] is not None:
+                st.write(previews[file.name])
+            else:
+                st.error("Unable to preview data. Adjust rows to skip or check the file format.")
+
+        # Step 1.2: Process all files and merge when the user clicks "Process All and Merge"
+        if st.button("Process All and Merge"):
+            processed_csvs = []
+            for file in uploaded_files:
+                try:
+                    # Load full file based on rows-to-skip
+                    df = pd.read_csv(
+                        StringIO(file.getvalue().decode("utf-8")),
+                        skiprows=rows_to_skip[file.name],
+                        on_bad_lines="skip"
+                    )
+                    processed_csvs.append(df)
+                except Exception as e:
+                    st.error(f"Failed to process {file.name}: {e}")
+
+            # Merge processed DataFrames
+            if processed_csvs:
+                merged_df = pd.concat(processed_csvs, ignore_index=True)
+                st.success("All files processed and merged successfully!")
+                st.write("Preview of merged data (first 50 rows):")
+                st.write(merged_df.head(50))
 
     # Step 2: Column Selection
     if "df" in st.session_state:
