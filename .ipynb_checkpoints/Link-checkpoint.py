@@ -65,7 +65,12 @@ def main():
                 merged_df = pd.concat(processed_csvs, ignore_index=True)
                 st.session_state.df = merged_df  # Store the merged DataFrame in session_state
                 st.success("All files processed and merged successfully!")
-                st.write(merged_df.head(50))
+                st.write("CSV preview (first 25 rows and last 25 rows)")
+                if len(merged_df) > 50:
+                    preview_df = pd.concat([merged_df.head(25), merged_df.tail(25)])
+                else:
+                    preview_df = merged_df  # Show all rows if there are fewer than 50
+                st.write(preview_df)
 
     # Step 2: Column Selection
     if "df" in st.session_state:
