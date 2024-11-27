@@ -96,15 +96,11 @@ def main():
         source_processing = st.selectbox("Select Processing for Source column", processing_options)
         target_processing = st.selectbox("Select Processing for Target column", processing_options)
 
-        # Save selections in session state
+        # Save Source and Target selections in session state
         st.session_state.source_column = source_column
         st.session_state.target_column = target_column
         st.session_state.source_processing = source_processing
         st.session_state.target_processing = target_processing
-
-        # Display preview of selected columns
-        st.subheader("Preview of Selected Columns for Network (first 50 rows)")
-        st.write(st.session_state.df[[source_column, target_column]].head(50))
 
         # Subsection 2: Additional Attributes
         st.markdown("#### Optional Attributes")
@@ -115,10 +111,15 @@ def main():
         )
         st.session_state.attribute_columns = attribute_columns
 
-        # Display preview of attributes if selected
-        if attribute_columns:
-            st.subheader("Preview of Selected Attributes (first 50 rows)")
-            st.write(st.session_state.df[attribute_columns].head(50))
+        # Unified Preview: Source, Target, and Attributes
+        st.subheader("Preview of Selected Columns for Network (first 50 rows)")
+        try:
+            # Combine Source, Target, and Attribute columns for preview
+            preview_columns = [source_column, target_column] + attribute_columns
+            preview_df = st.session_state.df[preview_columns].head(50)
+            st.write(preview_df)
+        except Exception as e:
+            st.error(f"An error occurred while generating the preview: {e}")
 
     # Step 2.5: Process Columns
     if "source_column" in st.session_state and "target_column" in st.session_state:
