@@ -76,6 +76,9 @@ def main():
     if "df" in st.session_state:
         st.subheader("Step 2: Select Columns and Processing Method")
         columns = st.session_state.df.columns.tolist()
+
+        # Subsection 1: Source and Target Columns
+        st.markdown("#### Source and Target Columns")
         source_column = st.selectbox("Select Source column", columns, index=0)
         target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
 
@@ -102,6 +105,20 @@ def main():
         # Display preview of selected columns
         st.subheader("Preview of Selected Columns for Network (first 50 rows)")
         st.write(st.session_state.df[[source_column, target_column]].head(50))
+
+        # Subsection 2: Additional Attributes
+        st.markdown("#### Optional Attributes")
+        attribute_columns = st.multiselect(
+            "Select additional columns as attributes (optional)", 
+            columns, 
+            default=[]
+        )
+        st.session_state.attribute_columns = attribute_columns
+
+        # Display preview of attributes if selected
+        if attribute_columns:
+            st.subheader("Preview of Selected Attributes (first 50 rows)")
+            st.write(st.session_state.df[attribute_columns].head(50))
 
     # Step 2.5: Process Columns
     if "source_column" in st.session_state and "target_column" in st.session_state:
@@ -146,23 +163,25 @@ def main():
                 elif graph_type == "Multi-Undirected":
                     G = nx.MultiGraph()
 
-                # Add edges to the graph from the processed DataFrame
-                edges = st.session_state.processed_df[[st.session_state.source_column, st.session_state.target_column]].values.tolist()
+                # Add edges to the graph
+                edges = st.session_state.processed_df[
+                    [st.session_state.source_column, st.session_state.target_column]
+                ].values.tolist()
                 G.add_edges_from(edges)
+
+                # Add attributes (if any) to nodes
+                if st.session_state.attribute_columns:
+                    for col in st.session_state.attribute_columns:
+                        for idx, row in st.session_state.processed_df.iterrows():
+                            G.nodes[row[st.session_state.source_column]][col] = row[col]
 
                 # Store the created graph in session state
                 st.session_state.graph = G  
 
-                # Only save the success message once
-                st.session_state.success_message = f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges."
+                # Success message
+                st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
             except Exception as e:
-                st.error("Failed to create the network graph.")
-
-        # Display the success message once, only when the graph is created
-        if "success_message" in st.session_state and st.session_state.success_message:
-            st.success(st.session_state.success_message)
-            # Clear the success message after displaying it once
-            st.session_state.success_message = None
+                st.error(f"Failed to create the network graph: {e}")
 
         # Export options only if a graph has been created
         if "graph" in st.session_state:
