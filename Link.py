@@ -40,7 +40,8 @@ def main():
             # Display preview or error message
             st.write(f"Preview of {file.name} (adjusted for {rows_to_skip[file.name]} rows skipped):")
             if previews[file.name] is not None:
-                st.write(previews[file.name])
+                with st.expander("Click to preview merged data (first 50 rows)", expanded=False):
+                    st.write(previews[file.name])
             else:
                 st.error("Unable to preview data. Adjust rows to skip or check the file format.")
 
@@ -48,7 +49,6 @@ def main():
         if st.button("Process All and Merge"):
             processed_csvs = []
             for file in uploaded_files:
-                try:
                     # Load full file based on rows-to-skip
                     df = pd.read_csv(
                         StringIO(file.getvalue().decode("utf-8")),
