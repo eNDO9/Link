@@ -49,6 +49,7 @@ def main():
         if st.button("Process All and Merge"):
             processed_csvs = []
             for file in uploaded_files:
+                try:
                     # Load full file based on rows-to-skip
                     df = pd.read_csv(
                         StringIO(file.getvalue().decode("utf-8")),
