@@ -64,8 +64,9 @@ def main():
                 merged_df = pd.concat(processed_csvs, ignore_index=True)
                 st.session_state.df = merged_df  # Store the merged DataFrame in session_state
                 st.success("All files processed and merged successfully!")
-                st.write("Preview of merged data (first 50 rows):")
-                st.write(merged_df.head(50))
+                # Collapsible preview section
+                with st.expander("Click to preview merged data (first 50 rows)", expanded=False):
+                    st.write(merged_df.head(50))
 
     # Step 2: Column Selection
     if "df" in st.session_state:
