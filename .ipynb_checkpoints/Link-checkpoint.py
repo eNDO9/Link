@@ -38,7 +38,7 @@ def main():
                 st.warning(f"Error loading preview for {file.name}. Adjust rows to skip.")
 
             # Display preview or error message
-            st.write(f"Preview of {file.name} (adjusted for {rows_to_skip[file.name]} rows skipped):")
+            #st.write(f"Preview of {file.name} (adjusted for {rows_to_skip[file.name]} rows skipped):")
             if previews[file.name] is not None:
                 with st.expander("Click to preview merged data (first 50 rows)", expanded=False):
                     st.write(previews[file.name])
@@ -65,9 +65,7 @@ def main():
                 merged_df = pd.concat(processed_csvs, ignore_index=True)
                 st.session_state.df = merged_df  # Store the merged DataFrame in session_state
                 st.success("All files processed and merged successfully!")
-                # Collapsible preview section
-                with st.expander("Click to preview merged data (first 50 rows)", expanded=False):
-                    st.write(merged_df.head(50))
+                st.write(merged_df.head(50))
 
     # Step 2: Column Selection
     if "df" in st.session_state:
