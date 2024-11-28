@@ -124,18 +124,34 @@ def main():
     # Step 2.5: Process Columns
     if "source_column" in st.session_state and "target_column" in st.session_state:
         if st.button("Process Columns"):
-            processed_df = process_columns(
-                st.session_state.df, 
-                st.session_state.source_column, 
-                st.session_state.target_column, 
-                st.session_state.source_processing, 
+            # Include Source, Target, and Attributes for processing
+            columns_to_process = [st.session_state.source_column, st.session_state.target_column] + st.session_state.attribute_columns
+            processed_df = st.session_state.df[columns_to_process].copy()
+
+            # Apply processing to Source and Target columns
+            processed_df[st.session_state.source_column] = apply_processing(
+                processed_df[st.session_state.source_column], 
+                st.session_state.source_processing
+            )
+            processed_df[st.session_state.target_column] = apply_processing(
+                processed_df[st.session_state.target_column], 
                 st.session_state.target_processing
             )
-            st.session_state.processed_df = processed_df  # Store the processed DataFrame
+
+            # Remove rows with empty Source or Target
+            processed_df = processed_df.dropna(subset=[st.session_state.source_column, st.session_state.target_column])
+
+            # Remove self-loops
+            processed_df = processed_df[processed_df[st.session_state.source_column] != processed_df[st.session_state.target_column]]
+
+            # Save the processed DataFrame
+            st.session_state.processed_df = processed_df
+
             st.success("Columns processed successfully!")
-            # Display preview of the processed data
+
+            # Unified preview: Source, Target, and Attributes
             st.subheader("Processed Data Preview for Network (first 50 rows)")
-            st.write(processed_df[[st.session_state.source_column, st.session_state.target_column]].head(50))
+            st.write(processed_df.head(50))
 
     # Step 3: Create and Export Network Graph
     if "processed_df" in st.session_state:
