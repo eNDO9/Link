@@ -158,7 +158,7 @@ def main():
             # Unified preview: Source, Target, and Attributes
             st.subheader("Processed Data Preview for Network (first 50 rows)")
             st.write(processed_df.head(50))
-
+            
     # Step 3: Create and Export Network Graph
     if "processed_df" in st.session_state:
         st.subheader("Step 3: Create and Export Network Graph")
