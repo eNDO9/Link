@@ -138,6 +138,12 @@ def main():
                 st.session_state.target_processing
             )
 
+            # Explode lists in the Source and Target columns
+            if processed_df[st.session_state.source_column].apply(lambda x: isinstance(x, list)).any():
+                processed_df = processed_df.explode(st.session_state.source_column).reset_index(drop=True)
+            if processed_df[st.session_state.target_column].apply(lambda x: isinstance(x, list)).any():
+                processed_df = processed_df.explode(st.session_state.target_column).reset_index(drop=True)
+
             # Remove rows with empty Source or Target
             processed_df = processed_df.dropna(subset=[st.session_state.source_column, st.session_state.target_column])
 
