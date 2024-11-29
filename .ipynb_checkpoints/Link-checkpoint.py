@@ -78,6 +78,14 @@ def main():
     if "df" in st.session_state:
         st.subheader("Step 2: Select Columns and Processing Method")
 
+        # Always keep the preview visible
+        st.subheader("CSV Preview (first 25 rows and last 25 rows)")
+        if len(st.session_state.df) > 50:
+            preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
+        else:
+            preview_df = st.session_state.df  # Show all rows if there are fewer than 50
+        st.write(preview_df)
+
         # Subsection 1: Source and Target Columns
         st.markdown("#### Source and Target Columns")
         source_column = st.selectbox("Select Source column", st.session_state.df.columns.tolist(), index=0)
@@ -121,7 +129,7 @@ def main():
             st.write(preview_df)
         except Exception as e:
             st.error(f"An error occurred while generating the preview: {e}")
-
+            
     # Step 2.5: Process Columns
     if "source_column" in st.session_state and "target_column" in st.session_state:
         if st.button("Process Columns"):
