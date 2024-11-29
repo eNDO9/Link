@@ -38,9 +38,8 @@ def main():
                 st.warning(f"Error loading preview for {file.name}. Adjust rows to skip.")
 
             # Display preview or error message
-            #st.write(f"Preview of {file.name} (adjusted for {rows_to_skip[file.name]} rows skipped):")
             if previews[file.name] is not None:
-                with st.expander("Click to preview merged data (first 50 rows)", expanded=False):
+                with st.expander(f"Preview of {file.name} (first 10 rows)", expanded=False):
                     st.write(previews[file.name])
             else:
                 st.error("Unable to preview data. Adjust rows to skip or check the file format.")
@@ -75,26 +74,9 @@ def main():
                     preview_df = merged_df  # Show all rows if there are fewer than 50
                 st.write(preview_df)
 
-        # Always display the merged preview if the DataFrame exists
-        if "df" in st.session_state:
-            st.subheader("CSV Preview (first 25 rows and last 25 rows)")
-            if len(st.session_state.df) > 50:
-                preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
-            else:
-                preview_df = st.session_state.df  # Show all rows if there are fewer than 50
-            st.write(preview_df)
-
     # Step 2: Column Selection
     if "df" in st.session_state:
         st.subheader("Step 2: Select Columns and Processing Method")
-
-        # Keep the preview visible
-        st.subheader("CSV Preview (first 25 rows and last 25 rows)")
-        if len(st.session_state.df) > 50:
-            preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
-        else:
-            preview_df = st.session_state.df  # Show all rows if there are fewer than 50
-        st.write(preview_df)
 
         # Subsection 1: Source and Target Columns
         st.markdown("#### Source and Target Columns")
