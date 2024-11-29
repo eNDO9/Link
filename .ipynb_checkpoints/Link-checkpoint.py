@@ -24,32 +24,28 @@ def main():
                 f"Rows to skip for {file.name}", min_value=0, value=0, step=1, key=f"skip_{file.name}"
             )
 
-            # Dynamic preview of individual files
+            # Collapsible preview for each file
             try:
                 preview_df = pd.read_csv(
                     StringIO(file.getvalue().decode("utf-8")),
                     skiprows=rows_to_skip[file.name],
-                    nrows=10,  # Show the first 10 rows for preview
+                    nrows=10,  # Only preview the first 10 rows
                     on_bad_lines="skip"
                 )
                 previews[file.name] = preview_df
+                with st.expander(f"Preview of {file.name} (first 10 rows)", expanded=False):
+                    st.write(preview_df)
             except Exception as e:
                 previews[file.name] = None
                 st.warning(f"Error loading preview for {file.name}. Adjust rows to skip.")
 
-            # Collapsible previews for each file
-            if previews[file.name] is not None:
-                with st.expander(f"Preview of {file.name} (first 10 rows)", expanded=False):
-                    st.write(previews[file.name])
-            else:
-                st.error(f"Unable to preview data for {file.name}. Check the file format or adjust rows to skip.")
-
-        # Process and Merge Button
+        # Step 1.2: Process all files and merge when the user clicks the button
         button_label = "Process CSV" if len(uploaded_files) == 1 else "Process and Merge"
         if st.button(button_label):  # Dynamically update button label
             processed_csvs = []
             for file in uploaded_files:
                 try:
+                    # Load full file based on rows-to-skip
                     df = pd.read_csv(
                         StringIO(file.getvalue().decode("utf-8")),
                         skiprows=rows_to_skip[file.name],
@@ -59,16 +55,17 @@ def main():
                 except Exception as e:
                     st.error(f"Failed to process {file.name}: {e}")
 
+            # Merge processed DataFrames
             if processed_csvs:
                 merged_df = pd.concat(processed_csvs, ignore_index=True)
-                st.session_state.df = merged_df
-                st.success("All files processed successfully!")
+                st.session_state.df = merged_df  # Store the merged DataFrame in session_state
+                st.success("All files processed and merged successfully!")
 
     # Step 2: Column Selection
     if "df" in st.session_state:
         st.subheader("Step 2: Select Columns and Processing Method")
 
-        # Persistent CSV Preview (show once and keep throughout Step 2)
+        # Unified Preview
         st.subheader("CSV Preview (first 25 rows and last 25 rows)")
         if len(st.session_state.df) > 50:
             preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
@@ -76,35 +73,39 @@ def main():
             preview_df = st.session_state.df
         st.write(preview_df)
 
-        # Source and Target Columns
+        # Subsection 1: Source and Target Columns
         st.markdown("#### Source and Target Columns")
         source_column = st.selectbox("Select Source column", st.session_state.df.columns.tolist(), index=0)
         target_column = st.selectbox("Select Target column", st.session_state.df.columns.tolist(), index=1)
 
-        # Processing Options
-        processing_options = ["No Processing", "Hashtags - Free Text", "Domains - Free Text", "Mentioned Users - Free Text"]
+        # Restored processing options for each column
+        processing_options = [
+            "No Processing",
+            "Hashtags - Free Text",
+            "Domains - Free Text",
+            "Mentioned Users - Free Text",
+            "Hashtags - Comma Separated List",
+            "Domains - Comma Separated List",
+            "Mentioned Users - Comma Separated List"
+        ]
+
         source_processing = st.selectbox("Select Processing for Source column", processing_options)
         target_processing = st.selectbox("Select Processing for Target column", processing_options)
 
-        # Save Selections
+        # Save Source and Target selections in session state
         st.session_state.source_column = source_column
         st.session_state.target_column = target_column
         st.session_state.source_processing = source_processing
         st.session_state.target_processing = target_processing
 
-        # Optional Attributes
+        # Subsection 2: Additional Attributes
         st.markdown("#### Optional Attributes")
-        attribute_columns = st.multiselect("Select additional columns as attributes (optional)", st.session_state.df.columns.tolist(), default=[])
+        attribute_columns = st.multiselect(
+            "Select additional columns as attributes (optional)",
+            st.session_state.df.columns.tolist(),
+            default=[]
+        )
         st.session_state.attribute_columns = attribute_columns
-
-        # Unified Preview of Selected Columns
-        st.subheader("Preview of Selected Columns for Network (first 50 rows)")
-        try:
-            preview_columns = [source_column, target_column] + attribute_columns
-            preview_df = st.session_state.df[preview_columns].head(50)
-            st.write(preview_df)
-        except Exception as e:
-            st.error(f"An error occurred while generating the preview: {e}")
 
     # Step 2.5: Process Columns
     if "source_column" in st.session_state and "target_column" in st.session_state:
@@ -115,11 +116,11 @@ def main():
 
             # Apply processing to Source and Target columns
             processed_df[st.session_state.source_column] = apply_processing(
-                processed_df[st.session_state.source_column], 
+                processed_df[st.session_state.source_column],
                 st.session_state.source_processing
             )
             processed_df[st.session_state.target_column] = apply_processing(
-                processed_df[st.session_state.target_column], 
+                processed_df[st.session_state.target_column],
                 st.session_state.target_processing
             )
 
@@ -143,7 +144,7 @@ def main():
             # Unified preview: Source, Target, and Attributes
             st.subheader("Processed Data Preview for Network (first 50 rows)")
             st.write(processed_df.head(50))
-            
+
     # Step 3: Create and Export Network Graph
     if "processed_df" in st.session_state:
         st.subheader("Step 3: Create and Export Network Graph")
@@ -195,25 +196,6 @@ def main():
         if "graph" in st.session_state:
             export_graph(st.session_state.graph, graph_type)
 
-def process_columns(df, source_column, target_column, source_processing, target_processing):
-    """Process data for network graph by applying specified processing options, exploding lists, dropping empty rows, and removing self-loops."""
-    df[source_column] = apply_processing(df[source_column], source_processing)
-    df[target_column] = apply_processing(df[target_column], target_processing)
-
-    # Explode lists in the Source and Target columns if they contain lists
-    if df[source_column].apply(lambda x: isinstance(x, list)).any():
-        df = df.explode(source_column)
-    if df[target_column].apply(lambda x: isinstance(x, list)).any():
-        df = df.explode(target_column)
-
-    # Drop rows where either Source or Target is empty (None or NaN)
-    df = df.dropna(subset=[source_column, target_column])
-
-    # Remove self-loops where Source == Target
-    df = df[df[source_column] != df[target_column]]
-
-    return df
-
 def apply_processing(column, processing_type):
     """Apply the selected processing type to a column."""
     column = column.str.lower()  # Convert all text to lowercase by default
@@ -221,18 +203,18 @@ def apply_processing(column, processing_type):
     if processing_type == "No Processing":
         return column
     elif processing_type == "Hashtags - Free Text":
-        return column.str.findall(r"#\w+").apply(lambda x: [tag.lower() for tag in x] if isinstance(x, list) else x)    
+        return column.str.findall(r"#\w+").apply(lambda x: [tag.lower() for tag in x] if isinstance(x, list) else x)
     elif processing_type == "Domains - Free Text":
-        return column.apply(lambda x: urlparse(x).netloc if pd.notnull(x) else None).str.lower()    
+        return column.apply(lambda x: urlparse(x).netloc if pd.notnull(x) else None).str.lower()
     elif processing_type == "Mentioned Users - Free Text":
-        return column.str.findall(r"@(\w+)").apply(lambda x: [mention.lower() for mention in x] if isinstance(x, list) else x)    
+        return column.str.findall(r"@(\w+)").apply(lambda x: [mention.lower() for mention in x] if isinstance(x, list) else x)
     elif processing_type == "Hashtags - Comma Separated List":
-        return column.str.split(",").apply(lambda x: [tag.strip().lower() for tag in x if tag.strip().startswith("#")] if isinstance(x, list) else x)    
+        return column.str.split(",").apply(lambda x: [tag.strip().lower() for tag in x if tag.strip().startswith("#")] if isinstance(x, list) else x)
     elif processing_type == "Domains - Comma Separated List":
-        return column.str.split(",").apply(lambda x: [urlparse(domain.strip()).netloc.lower() for domain in x if pd.notnull(domain)] if isinstance(x, list) else x)    
+        return column.str.split(",").apply(lambda x: [urlparse(domain.strip()).netloc.lower() for domain in x if pd.notnull(domain)] if isinstance(x, list) else x)
     elif processing_type == "Mentioned Users - Comma Separated List":
         return column.str.split(",").apply(lambda x: [mention.strip().lstrip("@").lower() for mention in x if mention.strip().startswith("@")] if isinstance(x, list) else x)
-    
+
     return column
 
 def export_graph(G, graph_type):
