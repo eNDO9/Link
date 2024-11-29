@@ -9,9 +9,7 @@ def main():
     st.title("Link")
     st.markdown("<p style='font-size:20px'>This tool creates a network graph from imported CSVs.</p>", unsafe_allow_html=True)
 
-    # Step 1: Upload Multiple Files
-    uploaded_files = st.file_uploader("Upload CSV files", type="csv", accept_multiple_files=True)
-
+    # Step 1: Upload and Process CSVs
     if uploaded_files:
         st.subheader("Adjust Settings and Preview Data")
         rows_to_skip = {}  # Store rows-to-skip values for each file
@@ -19,17 +17,15 @@ def main():
 
         # Step 1.1: Iterate through files to allow individual adjustments
         for file in uploaded_files:
-            # User input for rows to skip
             rows_to_skip[file.name] = st.number_input(
                 f"Rows to skip for {file.name}", min_value=0, value=0, step=1, key=f"skip_{file.name}"
             )
-
-            # Dynamic preview based on rows-to-skip
+            # Dynamic preview of individual files
             try:
                 preview_df = pd.read_csv(
                     StringIO(file.getvalue().decode("utf-8")),
                     skiprows=rows_to_skip[file.name],
-                    nrows=10,  # Only preview the first 10 rows
+                    nrows=10,
                     on_bad_lines="skip"
                 )
                 previews[file.name] = preview_df
@@ -37,20 +33,12 @@ def main():
                 previews[file.name] = None
                 st.warning(f"Error loading preview for {file.name}. Adjust rows to skip.")
 
-            # Display preview or error message
-            if previews[file.name] is not None:
-                with st.expander(f"Preview of {file.name} (first 10 rows)", expanded=False):
-                    st.write(previews[file.name])
-            else:
-                st.error("Unable to preview data. Adjust rows to skip or check the file format.")
-
-        # Step 1.2: Process all files and merge when the user clicks the button
+        # Process and Merge Button
         button_label = "Process CSV" if len(uploaded_files) == 1 else "Process and Merge"
-        if st.button(button_label):  # Dynamically update button label
+        if st.button(button_label):
             processed_csvs = []
             for file in uploaded_files:
                 try:
-                    # Load full file based on rows-to-skip
                     df = pd.read_csv(
                         StringIO(file.getvalue().decode("utf-8")),
                         skiprows=rows_to_skip[file.name],
@@ -60,22 +48,21 @@ def main():
                 except Exception as e:
                     st.error(f"Failed to process {file.name}: {e}")
 
-            # Merge processed DataFrames
             if processed_csvs:
                 merged_df = pd.concat(processed_csvs, ignore_index=True)
-                st.session_state.df = merged_df  # Store the merged DataFrame in session_state
-                st.success("All files processed and merged successfully!")
+                st.session_state.df = merged_df
+                st.success("All files processed successfully!")
 
     # Step 2: Column Selection
     if "df" in st.session_state:
         st.subheader("Step 2: Select Columns and Processing Method")
 
-        # Always keep the preview visible
+        # Keep only the Step 2 CSV Preview
         st.subheader("CSV Preview (first 25 rows and last 25 rows)")
         if len(st.session_state.df) > 50:
             preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
         else:
-            preview_df = st.session_state.df  # Show all rows if there are fewer than 50
+            preview_df = st.session_state.df
         st.write(preview_df)
 
         # Subsection 1: Source and Target Columns
@@ -115,13 +102,12 @@ def main():
         # Unified Preview: Source, Target, and Attributes
         st.subheader("Preview of Selected Columns for Network (first 50 rows)")
         try:
-            # Combine Source, Target, and Attribute columns for preview
             preview_columns = [source_column, target_column] + attribute_columns
             preview_df = st.session_state.df[preview_columns].head(50)
             st.write(preview_df)
         except Exception as e:
             st.error(f"An error occurred while generating the preview: {e}")
-            
+
     # Step 2.5: Process Columns
     if "source_column" in st.session_state and "target_column" in st.session_state:
         if st.button("Process Columns"):
