@@ -46,7 +46,7 @@ def main():
                 st.error("Unable to preview data. Adjust rows to skip or check the file format.")
 
         # Step 1.2: Process all files and merge when the user clicks the button
-        button_label = "Process CSV" if len(uploaded_files) == 1 else "Process CSVs and Merge"
+        button_label = "Process CSV" if len(uploaded_files) == 1 else "Process and Merge"
         if st.button(button_label):  # Dynamically update button label
             processed_csvs = []
             for file in uploaded_files:
@@ -66,22 +66,32 @@ def main():
                 merged_df = pd.concat(processed_csvs, ignore_index=True)
                 st.session_state.df = merged_df  # Store the merged DataFrame in session_state
                 st.success("All files processed and merged successfully!")
-                st.write("CSV preview (first 25 rows and last 25 rows)")
-                if len(merged_df) > 50:
-                    preview_df = pd.concat([merged_df.head(25), merged_df.tail(25)])
-                else:
-                    preview_df = merged_df  # Show all rows if there are fewer than 50
-                st.write(preview_df)
+
+        # Always display the merged preview if the DataFrame exists
+        if "df" in st.session_state:
+            st.subheader("CSV Preview (first 25 rows and last 25 rows)")
+            if len(st.session_state.df) > 50:
+                preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
+            else:
+                preview_df = st.session_state.df  # Show all rows if there are fewer than 50
+            st.write(preview_df)
 
     # Step 2: Column Selection
     if "df" in st.session_state:
         st.subheader("Step 2: Select Columns and Processing Method")
-        columns = st.session_state.df.columns.tolist()
+
+        # Keep the preview visible
+        st.subheader("CSV Preview (first 25 rows and last 25 rows)")
+        if len(st.session_state.df) > 50:
+            preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
+        else:
+            preview_df = st.session_state.df  # Show all rows if there are fewer than 50
+        st.write(preview_df)
 
         # Subsection 1: Source and Target Columns
         st.markdown("#### Source and Target Columns")
-        source_column = st.selectbox("Select Source column", columns, index=0)
-        target_column = st.selectbox("Select Target column", columns, index=1 if len(columns) > 1 else 0)
+        source_column = st.selectbox("Select Source column", st.session_state.df.columns.tolist(), index=0)
+        target_column = st.selectbox("Select Target column", st.session_state.df.columns.tolist(), index=1)
 
         # Processing options for each column
         processing_options = [
@@ -107,7 +117,7 @@ def main():
         st.markdown("#### Optional Attributes")
         attribute_columns = st.multiselect(
             "Select additional columns as attributes (optional)", 
-            columns, 
+            st.session_state.df.columns.tolist(), 
             default=[]
         )
         st.session_state.attribute_columns = attribute_columns
