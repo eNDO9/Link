@@ -161,55 +161,55 @@ def main():
             st.write(processed_df.head(50))
             
     # Step 3: Create and Export Network Graph
-if "processed_df" in st.session_state:
-    st.subheader("Step 3: Create and Export Network Graph")
+    if "processed_df" in st.session_state:
+        st.subheader("Step 3: Create and Export Network Graph")
 
-    # Graph type selection
-    graph_type = st.selectbox(
-        "Select Graph Type",
-        ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
-        help=("Directed: One-way relationships.\n"
-              "Undirected: Mutual relationships.\n"
-              "Multi-Directed: Directed graph allowing multiple edges.\n"
-              "Multi-Undirected: Undirected graph allowing multiple edges.")
-    )
+        # Graph type selection
+        graph_type = st.selectbox(
+            "Select Graph Type",
+            ["Directed", "Undirected", "Multi-Directed", "Multi-Undirected"],
+            help=("Directed: One-way relationships.\n"
+                  "Undirected: Mutual relationships.\n"
+                  "Multi-Directed: Directed graph allowing multiple edges.\n"
+                  "Multi-Undirected: Undirected graph allowing multiple edges.")
+        )
 
-    # Button to create the network graph
-    if st.button("Create Network Graph"):
-        try:
-            # Initialize the appropriate NetworkX graph
-            if graph_type == "Directed":
-                G = nx.DiGraph()
-            elif graph_type == "Undirected":
-                G = nx.Graph()
-            elif graph_type == "Multi-Directed":
-                G = nx.MultiDiGraph()
-            elif graph_type == "Multi-Undirected":
-                G = nx.MultiGraph()
+        # Button to create the network graph
+        if st.button("Create Network Graph"):
+            try:
+                # Initialize the appropriate NetworkX graph
+                if graph_type == "Directed":
+                    G = nx.DiGraph()
+                elif graph_type == "Undirected":
+                    G = nx.Graph()
+                elif graph_type == "Multi-Directed":
+                    G = nx.MultiDiGraph()
+                elif graph_type == "Multi-Undirected":
+                    G = nx.MultiGraph()
 
-            # Add edges to the graph
-            edges = st.session_state.processed_df[
-                [st.session_state.source_column, st.session_state.target_column]
-            ].values.tolist()
-            G.add_edges_from(edges)
+                # Add edges to the graph
+                edges = st.session_state.processed_df[
+                    [st.session_state.source_column, st.session_state.target_column]
+                ].values.tolist()
+                G.add_edges_from(edges)
 
-            # Add attributes (if any) to nodes
-            if st.session_state.attribute_columns:
-                for col in st.session_state.attribute_columns:
-                    for idx, row in st.session_state.processed_df.iterrows():
-                        G.nodes[row[st.session_state.source_column]][col] = row[col]
+                # Add attributes (if any) to nodes
+                if st.session_state.attribute_columns:
+                    for col in st.session_state.attribute_columns:
+                        for idx, row in st.session_state.processed_df.iterrows():
+                            G.nodes[row[st.session_state.source_column]][col] = row[col]
 
-            # Store the created graph in session state
-            st.session_state.graph = G  
+                # Store the created graph in session state
+                st.session_state.graph = G  
 
-            # Success message
-            st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
-        except Exception as e:
-            st.error(f"Failed to create the network graph: {e}")
+                # Success message
+                st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
+            except Exception as e:
+                st.error(f"Failed to create the network graph: {e}")
 
-    # Export options only if a graph has been created
-    if "graph" in st.session_state:
-        export_graph(st.session_state.graph, graph_type)
+        # Export options only if a graph has been created
+        if "graph" in st.session_state:
+            export_graph(st.session_state.graph, graph_type)
 
 def process_columns(df, source_column, target_column, source_processing, target_processing):
     """Process data for network graph by applying specified processing options, exploding lists, dropping empty rows, and removing self-loops."""
