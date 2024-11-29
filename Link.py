@@ -10,6 +10,8 @@ def main():
     st.markdown("<p style='font-size:20px'>This tool creates a network graph from imported CSVs.</p>", unsafe_allow_html=True)
 
     # Step 1: Upload and Process CSVs
+    uploaded_files = st.file_uploader("Upload CSV files", type="csv", accept_multiple_files=True)
+
     if uploaded_files:
         st.subheader("Adjust Settings and Preview Data")
         rows_to_skip = {}  # Store rows-to-skip values for each file
@@ -35,7 +37,7 @@ def main():
 
         # Process and Merge Button
         button_label = "Process CSV" if len(uploaded_files) == 1 else "Process and Merge"
-        if st.button(button_label):
+        if st.button(button_label):  # Dynamically update button label
             processed_csvs = []
             for file in uploaded_files:
                 try:
@@ -57,7 +59,7 @@ def main():
     if "df" in st.session_state:
         st.subheader("Step 2: Select Columns and Processing Method")
 
-        # Keep only the Step 2 CSV Preview
+        # Persistent CSV Preview (show once and keep throughout Step 2)
         st.subheader("CSV Preview (first 25 rows and last 25 rows)")
         if len(st.session_state.df) > 50:
             preview_df = pd.concat([st.session_state.df.head(25), st.session_state.df.tail(25)])
@@ -65,41 +67,28 @@ def main():
             preview_df = st.session_state.df
         st.write(preview_df)
 
-        # Subsection 1: Source and Target Columns
+        # Source and Target Columns
         st.markdown("#### Source and Target Columns")
         source_column = st.selectbox("Select Source column", st.session_state.df.columns.tolist(), index=0)
         target_column = st.selectbox("Select Target column", st.session_state.df.columns.tolist(), index=1)
 
-        # Processing options for each column
-        processing_options = [
-            "No Processing", 
-            "Hashtags - Free Text", 
-            "Domains - Free Text", 
-            "Mentioned Users - Free Text", 
-            "Hashtags - Comma Separated List", 
-            "Domains - Comma Separated List", 
-            "Mentioned Users - Comma Separated List"
-        ]
-
+        # Processing Options
+        processing_options = ["No Processing", "Hashtags - Free Text", "Domains - Free Text", "Mentioned Users - Free Text"]
         source_processing = st.selectbox("Select Processing for Source column", processing_options)
         target_processing = st.selectbox("Select Processing for Target column", processing_options)
 
-        # Save Source and Target selections in session state
+        # Save Selections
         st.session_state.source_column = source_column
         st.session_state.target_column = target_column
         st.session_state.source_processing = source_processing
         st.session_state.target_processing = target_processing
 
-        # Subsection 2: Additional Attributes
+        # Optional Attributes
         st.markdown("#### Optional Attributes")
-        attribute_columns = st.multiselect(
-            "Select additional columns as attributes (optional)", 
-            st.session_state.df.columns.tolist(), 
-            default=[]
-        )
+        attribute_columns = st.multiselect("Select additional columns as attributes (optional)", st.session_state.df.columns.tolist(), default=[])
         st.session_state.attribute_columns = attribute_columns
 
-        # Unified Preview: Source, Target, and Attributes
+        # Unified Preview of Selected Columns
         st.subheader("Preview of Selected Columns for Network (first 50 rows)")
         try:
             preview_columns = [source_column, target_column] + attribute_columns
