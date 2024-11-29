@@ -19,21 +19,30 @@ def main():
 
         # Step 1.1: Iterate through files to allow individual adjustments
         for file in uploaded_files:
+            # User input for rows to skip
             rows_to_skip[file.name] = st.number_input(
                 f"Rows to skip for {file.name}", min_value=0, value=0, step=1, key=f"skip_{file.name}"
             )
+
             # Dynamic preview of individual files
             try:
                 preview_df = pd.read_csv(
                     StringIO(file.getvalue().decode("utf-8")),
                     skiprows=rows_to_skip[file.name],
-                    nrows=10,
+                    nrows=10,  # Show the first 10 rows for preview
                     on_bad_lines="skip"
                 )
                 previews[file.name] = preview_df
             except Exception as e:
                 previews[file.name] = None
                 st.warning(f"Error loading preview for {file.name}. Adjust rows to skip.")
+
+            # Collapsible previews for each file
+            if previews[file.name] is not None:
+                with st.expander(f"Preview of {file.name} (first 10 rows)", expanded=False):
+                    st.write(previews[file.name])
+            else:
+                st.error(f"Unable to preview data for {file.name}. Check the file format or adjust rows to skip.")
 
         # Process and Merge Button
         button_label = "Process CSV" if len(uploaded_files) == 1 else "Process and Merge"
