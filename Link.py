@@ -220,13 +220,27 @@ def apply_processing(column, processing_type):
 def export_graph(G, graph_type):
     st.subheader("Export Network Graph")
 
-    # to_csv function without "Key" column for Multi-graphs
     def to_csv(G, graph_type):
-        nodes_df = pd.DataFrame(G.nodes, columns=["Node"]) if G.number_of_nodes() > 0 else pd.DataFrame(columns=["Node"])
-        if "Multi" in graph_type:
-            edges_df = pd.DataFrame([(u, v) for u, v, _ in G.edges(keys=True)], columns=["Source", "Target"])
+        # Extract nodes with attributes into a DataFrame
+        if G.number_of_nodes() > 0:
+            nodes_data = [
+                {"Node": node, **data} for node, data in G.nodes(data=True)
+            ]
+            nodes_df = pd.DataFrame(nodes_data)
         else:
-            edges_df = pd.DataFrame([(u, v) for u, v in G.edges], columns=["Source", "Target"])
+            nodes_df = pd.DataFrame(columns=["Node"])
+
+        # Extract edges with attributes into a DataFrame
+        if "Multi" in graph_type:
+            edges_data = [
+                {"Source": u, "Target": v, **data} for u, v, _, data in G.edges(data=True, keys=True)
+            ]
+        else:
+            edges_data = [
+                {"Source": u, "Target": v, **data} for u, v, data in G.edges(data=True)
+            ]
+        edges_df = pd.DataFrame(edges_data)
+
         return nodes_df, edges_df
 
     def to_gexf(G):
