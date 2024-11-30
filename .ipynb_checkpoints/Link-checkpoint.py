@@ -224,11 +224,11 @@ def export_graph(G, graph_type):
         # Extract nodes with attributes into a DataFrame
         if G.number_of_nodes() > 0:
             nodes_data = [
-                {"Node": node, **data} for node, data in G.nodes(data=True)
+                {"Id": node, "Label": node, **data} for node, data in G.nodes(data=True)
             ]
             nodes_df = pd.DataFrame(nodes_data)
         else:
-            nodes_df = pd.DataFrame(columns=["Node"])
+            nodes_df = pd.DataFrame(columns=["Id", "Label"])
 
         # Extract edges with attributes into a DataFrame
         if "Multi" in graph_type:
@@ -242,6 +242,7 @@ def export_graph(G, graph_type):
         edges_df = pd.DataFrame(edges_data)
 
         return nodes_df, edges_df
+
 
     def to_gexf(G):
         if G.number_of_edges() > 0:
