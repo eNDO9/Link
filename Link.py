@@ -8,6 +8,10 @@ from urllib.parse import urlparse
 def main():
     st.title("Link")
     st.markdown("<p style='font-size:20px'>This tool creates a network graph from imported CSVs.</p>", unsafe_allow_html=True)
+    
+    st.write("")
+    st.write("")
+    st.subheader("Step 1: Upload and Process CSVs")
 
     # Step 1: Upload and Process CSVs
     uploaded_files = st.file_uploader("Upload CSV files", type="csv", accept_multiple_files=True)
