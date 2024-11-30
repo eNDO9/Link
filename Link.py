@@ -81,12 +81,12 @@ def main():
         # Restored processing options for each column
         processing_options = [
             "No Processing",
-            "Hashtags - Free Text",
-            "Domains - Free Text",
-            "Mentioned Users - Free Text",
-            "Hashtags - Comma Separated List",
-            "Domains - Comma Separated List",
-            "Mentioned Users - Comma Separated List"
+            "Free Text - Hashtags",
+            "Free Text - Domains",
+            "Free Text - Mentioned Users",
+            "Comma Separated List - Hashtags",
+            "Comma Separated List - Domains",
+            "Comma Separated List - Mentioned Users"
         ]
 
         source_processing = st.selectbox("Select Processing for Source column", processing_options)
@@ -202,19 +202,18 @@ def apply_processing(column, processing_type):
 
     if processing_type == "No Processing":
         return column
-    elif processing_type == "Hashtags - Free Text":
+    elif processing_type == "Free Text - Hashtags":
         return column.str.findall(r"#\w+").apply(lambda x: [tag.lower() for tag in x] if isinstance(x, list) else x)
-    elif processing_type == "Domains - Free Text":
+    elif processing_type == "Free Text - Domains":
         return column.apply(lambda x: urlparse(x).netloc if pd.notnull(x) else None).str.lower()
-    elif processing_type == "Mentioned Users - Free Text":
+    elif processing_type == "Free Text - Mentioned Users":
         return column.str.findall(r"@(\w+)").apply(lambda x: [mention.lower() for mention in x] if isinstance(x, list) else x)
-    elif processing_type == "Hashtags - Comma Separated List":
+    elif processing_type == "Comma Separated List - Hashtags":
         return column.str.split(",").apply(lambda x: [tag.strip().lower() for tag in x if tag.strip().startswith("#")] if isinstance(x, list) else x)
-    elif processing_type == "Domains - Comma Separated List":
+    elif processing_type == "Comma Separated List - Domains":
         return column.str.split(",").apply(lambda x: [urlparse(domain.strip()).netloc.lower() for domain in x if pd.notnull(domain)] if isinstance(x, list) else x)
-    elif processing_type == "Mentioned Users - Comma Separated List":
+    elif processing_type == "Comma Separated List - Mentioned Users":
         return column.str.split(",").apply(lambda x: [mention.strip().lstrip("@").lower() for mention in x if mention.strip().startswith("@")] if isinstance(x, list) else x)
-
     return column
 
 def export_graph(G, graph_type):
