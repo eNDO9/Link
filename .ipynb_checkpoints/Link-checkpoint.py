@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 def main():
     st.title("Link")
     # Add a logo
-    st.logo("logo.png", size='medium')
+    st.logo("logo.png", size='large')
     
     st.markdown("<p style='font-size:20px; font-style: italic;'>This tool creates a network graph from imported CSVs.</p>", unsafe_allow_html=True)
     st.write("")
