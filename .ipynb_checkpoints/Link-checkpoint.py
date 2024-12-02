@@ -37,7 +37,7 @@ def main():
             }
         </style>
         <div class="footer">
-            Need help? <a href="https://github.com/eNDO9/Link/blob/main/Overview%20-%20Link.pdf" target="_blank">View the User Guide</a>
+            Need help? <a href="https://github.com/eNDO9/Link/blob/main/Guide%20-%20Link.pdf" target="_blank">View the User Guide</a>
         </div>
     """
     st.markdown(footer, unsafe_allow_html=True)

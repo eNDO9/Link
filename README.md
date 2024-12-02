@@ -8,4 +8,4 @@ This project was developed by Nathan Doctor as a part of the Institute for Strat
 
 Special thanks to the Streamlit and NetworkX communities for their support.
 
-For additional documentation, see the guide - https://github.com/eNDO9/Link/blob/main/Overview%20-%20Link.pdf
+For additional documentation, see the guide - https://github.com/eNDO9/Link/blob/main/Guide%20-%20Link.pdf
