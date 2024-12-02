@@ -26,7 +26,7 @@ def main():
                 color: white;
                 text-align: center;
                 padding: 10px 0;
-                font-size: 24px;
+                font-size: 18px;
             }
             .footer a {
                 color: #0068B2; /* Matches your organization's color palette */
