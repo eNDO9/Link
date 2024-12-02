@@ -13,6 +13,8 @@ def main():
     st.markdown("<p style='font-size:20px; font-style: italic;'>This tool creates a network graph from imported CSVs.</p>", unsafe_allow_html=True)
     st.write("")
     st.write("")
+    st.markdown("### User Guide")
+    st.markdown("Need help? [Click here](path/to/your_guide.pdf) to view the user guide.")
     st.subheader("Step 1: Upload and Process CSVs")
 
     # Step 1: Upload and Process CSVs
