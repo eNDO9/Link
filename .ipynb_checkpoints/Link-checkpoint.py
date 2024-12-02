@@ -26,10 +26,10 @@ def main():
                 color: white;
                 text-align: center;
                 padding: 10px 0;
-                font-size: 14px;
+                font-size: 24px;
             }
             .footer a {
-                color: #4C4193; /* Matches your organization's color palette */
+                color: #0068B2; /* Matches your organization's color palette */
                 text-decoration: none;
                 font-weight: bold;
             }
@@ -43,8 +43,6 @@ def main():
     """
     st.markdown(footer, unsafe_allow_html=True)
     
-    st.write("")
-    st.write("")
     st.subheader("Step 1: Upload and Process CSVs")
 
     # Step 1: Upload and Process CSVs
