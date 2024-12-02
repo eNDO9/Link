@@ -14,7 +14,6 @@ def main():
     st.write("")
     st.write("")
     
-    st.markdown("### User Guide")
     st.markdown(
     """
     ### User Guide
