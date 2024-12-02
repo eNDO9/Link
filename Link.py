@@ -12,7 +12,6 @@ def main():
     
     st.markdown("<p style='font-size:20px; font-style: italic;'>This tool creates a network graph from imported CSVs.</p>", unsafe_allow_html=True)
     st.write("")
-    st.write("")
     
     # Custom CSS for footer
     footer = """
