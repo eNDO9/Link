@@ -14,13 +14,34 @@ def main():
     st.write("")
     st.write("")
     
-    st.markdown(
+    # Custom CSS for footer
+    footer = """
+        <style>
+            .footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background-color: #0E1117; /* Matches the dark mode */
+                color: white;
+                text-align: center;
+                padding: 10px 0;
+                font-size: 14px;
+            }
+            .footer a {
+                color: #4C4193; /* Matches your organization's color palette */
+                text-decoration: none;
+                font-weight: bold;
+            }
+            .footer a:hover {
+                text-decoration: underline;
+            }
+        </style>
+        <div class="footer">
+            Need help? <a href="https://github.com/eNDO9/Link/blob/main/Overview%20-%20Link.pdf" target="_blank">View the User Guide</a>
+        </div>
     """
-    ### User Guide
-    Need help? [View the User Guide](https://github.com/eNDO9/Link/blob/main/Overview%20-%20Link.pdf).
-    """,
-    unsafe_allow_html=True
-    )
+    st.markdown(footer, unsafe_allow_html=True)
     
     st.write("")
     st.write("")
