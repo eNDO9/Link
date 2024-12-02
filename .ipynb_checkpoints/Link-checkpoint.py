@@ -17,7 +17,7 @@ def main():
     st.markdown(
     """
     ### User Guide
-    Need help? [View the User Guide](https://github.com/eNDO9/Link/blob/main/Overview%20-%20Link.pdf) (opens in a new tab).
+    Need help? [View the User Guide](https://github.com/eNDO9/Link/blob/main/Overview%20-%20Link.pdf).
     """,
     unsafe_allow_html=True
     )
