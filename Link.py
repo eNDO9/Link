@@ -233,6 +233,7 @@ def main():
 
 def apply_processing(column, processing_type):
     """Apply the selected processing type to a column."""
+    column = column.astype('str')
     column = column.str.lower()  # Convert all text to lowercase by default
 
     if processing_type == "No Processing":
