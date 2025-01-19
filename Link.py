@@ -231,6 +231,7 @@ def main():
         if "graph" in st.session_state:
             export_graph(st.session_state.graph, graph_type)
             
+            
     # Step 4: Upload Attribute Data (Optional)
     if "processed_df" in st.session_state:
         st.subheader("Step 4: Upload Attribute Data (Optional)")
@@ -252,35 +253,83 @@ def main():
 
                 # Column selection for mapping
                 node_column = st.selectbox("Select column containing node names", attribute_df.columns)
-                st.session_state.node_column = node_column
 
-                # Add attributes to nodes
-                st.button("Map Attributes to Nodes", on_click=map_attributes, args=(attribute_df, node_column))
+                # Button to map attributes
+                if st.button("Map Attributes to Nodes"):
+                    # Convert node names to lowercase for strict matching
+                    attribute_df[node_column] = attribute_df[node_column].str.lower()
+
+                    # Map attributes to nodes
+                    attribute_dict = attribute_df.set_index(node_column).to_dict("index")
+                    for node in st.session_state.graph.nodes():
+                        node_lower = str(node).lower()
+                        if node_lower in attribute_dict:
+                            st.session_state.graph.nodes[node].update(attribute_dict[node_lower])
+                        else:
+                            # Add 'None' for unmatched nodes
+                            st.session_state.graph.nodes[node].update(
+                                {key: "None" for key in attribute_df.columns if key != node_column}
+                            )
+
+                    st.success("Attributes successfully mapped to nodes!")
 
             except Exception as e:
                 st.error(f"Error processing attribute file: {e}")
 
-    # Function to map attributes to nodes
-    def map_attributes(attribute_df, node_column):
-        """Map attributes to nodes in the graph."""
-        try:
-            # Convert node names to lowercase for strict matching
-            attribute_df[node_column] = attribute_df[node_column].str.lower()
+        # Skip button for this step
+        if st.button("Skip Step 4"):
+            st.success("Step 4 skipped. Proceed to Step 5.")
 
-            # Map attributes to nodes
-            attribute_dict = attribute_df.set_index(node_column).to_dict("index")
-            for node in st.session_state.graph.nodes():
-                node_lower = str(node).lower()
-                if node_lower in attribute_dict:
-                    st.session_state.graph.nodes[node].update(attribute_dict[node_lower])
-                else:
-                    # Add 'None' for unmatched nodes
-                    st.session_state.graph.nodes[node].update({key: "None" for key in attribute_df.columns if key != node_column})
+    # Step 5: Export Network Graph
+    if "graph" in st.session_state:
+        st.subheader("Step 5: Export Network Graph")
 
-            st.success("Attributes successfully mapped to nodes!")
+        def to_csv(G, graph_type):
+            """Extract nodes and edges into DataFrames with attributes."""
+            # Extract nodes with attributes into a DataFrame
+            if G.number_of_nodes() > 0:
+                nodes_data = [{"Id": node, "Label": node, **data} for node, data in G.nodes(data=True)]
+                nodes_df = pd.DataFrame(nodes_data)
+            else:
+                nodes_df = pd.DataFrame(columns=["Id", "Label"])
 
-        except Exception as e:
-            st.error(f"Failed to map attributes: {e}")
+            # Extract edges with attributes into a DataFrame
+            if "Multi" in graph_type:
+                edges_data = [{"Source": u, "Target": v, **data} for u, v, _, data in G.edges(data=True, keys=True)]
+            else:
+                edges_data = [{"Source": u, "Target": v, **data} for u, v, data in G.edges(data=True)]
+            edges_df = pd.DataFrame(edges_data)
+
+            return nodes_df, edges_df
+
+        def to_gexf(G):
+            """Export the graph as a GEXF file."""
+            if G.number_of_edges() > 0:
+                gexf_data = BytesIO()
+                nx.write_gexf(G, gexf_data)
+                gexf_data.seek(0)
+                return gexf_data
+            else:
+                st.warning("The graph has no edges to export in GEXF format.")
+                return None
+
+        # Export format selection
+        export_format = st.selectbox("Choose export format", ["GEXF", "CSV (Nodes and Edges)"])
+
+        if export_format == "CSV (Nodes and Edges)":
+            nodes_df, edges_df = to_csv(st.session_state.graph, st.session_state.graph_type)
+            if not nodes_df.empty:
+                nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
+                st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
+            if not edges_df.empty:
+                edges_csv = edges_df.to_csv(index=False).encode('utf-8')
+                st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv")
+
+        elif export_format == "GEXF":
+            gexf_data = to_gexf(st.session_state.graph)
+            if gexf_data:
+                st.download_button(label="Download GEXF", data=gexf_data, file_name="network_graph.gexf", mime="application/gexf+xml")
+
 
 def apply_processing(column, processing_type):
     """Apply the selected processing type to a column."""
@@ -302,60 +351,6 @@ def apply_processing(column, processing_type):
     elif processing_type == "Comma Separated List - Mentioned Users":
         return column.str.split(",").apply(lambda x: [mention.strip().lstrip("@").lower() for mention in x if mention.strip().startswith("@")] if isinstance(x, list) else x)
     return column
-
-def export_graph(G, graph_type):
-    st.subheader("Export Network Graph")
-
-    def to_csv(G, graph_type):
-        # Extract nodes with attributes into a DataFrame
-        if G.number_of_nodes() > 0:
-            nodes_data = [
-                {"Id": node, "Label": node, **data} for node, data in G.nodes(data=True)
-            ]
-            nodes_df = pd.DataFrame(nodes_data)
-        else:
-            nodes_df = pd.DataFrame(columns=["Id", "Label"])
-
-        # Extract edges with attributes into a DataFrame
-        if "Multi" in graph_type:
-            edges_data = [
-                {"Source": u, "Target": v, **data} for u, v, _, data in G.edges(data=True, keys=True)
-            ]
-        else:
-            edges_data = [
-                {"Source": u, "Target": v, **data} for u, v, data in G.edges(data=True)
-            ]
-        edges_df = pd.DataFrame(edges_data)
-
-        return nodes_df, edges_df
-
-
-    def to_gexf(G):
-        if G.number_of_edges() > 0:
-            gexf_data = BytesIO()
-            nx.write_gexf(G, gexf_data)
-            gexf_data.seek(0)
-            return gexf_data
-        else:
-            st.warning("The graph has no edges to export in GEXF format.")
-            return None
-
-    # Set GEXF as the default export format
-    export_format = st.selectbox("Choose export format", ["GEXF", "CSV (Nodes and Edges)"])
-
-    if export_format == "CSV (Nodes and Edges)":
-        nodes_df, edges_df = to_csv(G, graph_type)
-        if not nodes_df.empty:
-            nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
-        if not edges_df.empty:
-            edges_csv = edges_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv")
-
-    elif export_format == "GEXF":
-        gexf_data = to_gexf(G)
-        if gexf_data:
-            st.download_button(label="Download GEXF", data=gexf_data, file_name="network_graph.gexf", mime="application/gexf+xml")
 
 if __name__ == "__main__":
     main()
