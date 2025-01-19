@@ -227,9 +227,8 @@ def main():
             except Exception as e:
                 st.error(f"Failed to create the network graph: {e}")
 
-        # Export options only if a graph has been created
         if "graph" in st.session_state:
-            export_graph(st.session_state.graph, graph_type)
+            st.success(f"Graph created successfully!")
             
             
     # Step 4: Upload Attribute Data (Optional)
