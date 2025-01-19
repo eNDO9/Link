@@ -230,9 +230,61 @@ def main():
         # Export options only if a graph has been created
         if "graph" in st.session_state:
             export_graph(st.session_state.graph, graph_type)
+            
+    # Step 4: Upload Attribute Data (Optional)
+    if "processed_df" in st.session_state:
+        st.subheader("Step 4: Upload Attribute Data (Optional)")
+
+        attribute_file = st.file_uploader("Upload CSV file with node attributes", type="csv", key="attribute_upload")
+
+        if attribute_file:
+            try:
+                # Load the attribute CSV
+                attribute_df = pd.read_csv(StringIO(attribute_file.getvalue().decode("utf-8")))
+
+                # Preview the attribute file (first 25 and last 25 rows)
+                st.subheader("Attribute File Preview")
+                if len(attribute_df) > 50:
+                    preview_attribute_df = pd.concat([attribute_df.head(25), attribute_df.tail(25)])
+                else:
+                    preview_attribute_df = attribute_df
+                st.write(preview_attribute_df)
+
+                # Column selection for mapping
+                node_column = st.selectbox("Select column containing node names", attribute_df.columns)
+                st.session_state.node_column = node_column
+
+                # Add attributes to nodes
+                st.button("Map Attributes to Nodes", on_click=map_attributes, args=(attribute_df, node_column))
+
+            except Exception as e:
+                st.error(f"Error processing attribute file: {e}")
+
+    # Function to map attributes to nodes
+    def map_attributes(attribute_df, node_column):
+        """Map attributes to nodes in the graph."""
+        try:
+            # Convert node names to lowercase for strict matching
+            attribute_df[node_column] = attribute_df[node_column].str.lower()
+
+            # Map attributes to nodes
+            attribute_dict = attribute_df.set_index(node_column).to_dict("index")
+            for node in st.session_state.graph.nodes():
+                node_lower = str(node).lower()
+                if node_lower in attribute_dict:
+                    st.session_state.graph.nodes[node].update(attribute_dict[node_lower])
+                else:
+                    # Add 'None' for unmatched nodes
+                    st.session_state.graph.nodes[node].update({key: "None" for key in attribute_df.columns if key != node_column})
+
+            st.success("Attributes successfully mapped to nodes!")
+
+        except Exception as e:
+            st.error(f"Failed to map attributes: {e}")
 
 def apply_processing(column, processing_type):
     """Apply the selected processing type to a column."""
+    column = column.astype('str')
     column = column.str.lower()  # Convert all text to lowercase by default
 
     if processing_type == "No Processing":
