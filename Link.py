@@ -194,7 +194,6 @@ def main():
                   "Multi-Undirected: Undirected graph allowing multiple edges.")
         )
 
-        # Button to create the network graph
         if st.button("Create Network Graph"):
             try:
                 # Initialize the appropriate NetworkX graph
@@ -219,18 +218,15 @@ def main():
                         for idx, row in st.session_state.processed_df.iterrows():
                             G.nodes[row[st.session_state.source_column]][col] = row[col]
 
-                # Store the created graph in session state
-                st.session_state.graph = G  
+                # Store the created graph and graph type in session state
+                st.session_state.graph = G
+                st.session_state.graph_type = graph_type  # Store graph type for later export
 
                 # Success message
                 st.success(f"{graph_type} graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
             except Exception as e:
                 st.error(f"Failed to create the network graph: {e}")
-
-        if "graph" in st.session_state:
-            st.success(f"Graph created successfully!")
-            
-            
+                
     # Step 4: Upload Attribute Data (Optional)
     if "processed_df" in st.session_state:
         st.subheader("Step 4: Upload Attribute Data (Optional)")
@@ -316,13 +312,16 @@ def main():
         export_format = st.selectbox("Choose export format", ["GEXF", "CSV (Nodes and Edges)"])
 
         if export_format == "CSV (Nodes and Edges)":
-            nodes_df, edges_df = to_csv(st.session_state.graph, st.session_state.graph_type)
-            if not nodes_df.empty:
-                nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
-                st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
-            if not edges_df.empty:
-                edges_csv = edges_df.to_csv(index=False).encode('utf-8')
-                st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv")
+            if "graph" in st.session_state and "graph_type" in st.session_state:
+                nodes_df, edges_df = to_csv(st.session_state.graph, st.session_state.graph_type)
+                if not nodes_df.empty:
+                    nodes_csv = nodes_df.to_csv(index=False).encode('utf-8')
+                    st.download_button(label="Download Nodes CSV", data=nodes_csv, file_name="nodes.csv", mime="text/csv")
+                if not edges_df.empty:
+                    edges_csv = edges_df.to_csv(index=False).encode('utf-8')
+                    st.download_button(label="Download Edges CSV", data=edges_csv, file_name="edges.csv")
+            else:
+                st.error("Graph or graph type is missing. Please create the network graph first.")
 
         elif export_format == "GEXF":
             gexf_data = to_gexf(st.session_state.graph)
