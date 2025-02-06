@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import networkx as nx
 from io import StringIO, BytesIO
+import io
 import re
 from urllib.parse import urlparse
 
