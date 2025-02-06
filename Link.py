@@ -180,13 +180,30 @@ def main():
             st.subheader("Processed Data Preview for Network (first 50 rows)")
             st.write(processed_df.head(50))
 
-            # Provide a Download Button for the Full Processed Dataset
-            processed_csv = processed_df.to_csv(index=False).encode("utf-8")
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                # Sheet 1: Full processed dataset
+                processed_df.to_excel(writer, sheet_name="Processed Columns", index=False)
+    
+                # Sheet 2: Value count of Source Column
+                source_counts = processed_df[st.session_state.source_column].value_counts().reset_index()
+                source_counts.columns = [st.session_state.source_column, "Count"]
+                source_counts.to_excel(writer, sheet_name=f"{st.session_state.source_column} Counts", index=False)
+    
+                # Sheet 3: Value count of Target Column
+                target_counts = processed_df[st.session_state.target_column].value_counts().reset_index()
+                target_counts.columns = [st.session_state.target_column, "Count"]
+                target_counts.to_excel(writer, sheet_name=f"{st.session_state.target_column} Counts", index=False)
+    
+                writer.close()
+    
+            # Convert to downloadable format
+            output.seek(0)
             st.download_button(
-                label="Download Processed Columns CSV",
-                data=processed_csv,
-                file_name="processed_columns.csv",
-                mime="text/csv"
+                label="Download Processed Data (optional)",
+                data=output,
+                file_name="processed_network_data.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
     # Step 3: Create and Export Network Graph
