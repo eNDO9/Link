@@ -180,6 +180,15 @@ def main():
             st.subheader("Processed Data Preview for Network (first 50 rows)")
             st.write(processed_df.head(50))
 
+            # Provide a Download Button for the Full Processed Dataset
+            processed_csv = processed_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="Download Processed Columns CSV",
+                data=processed_csv,
+                file_name="processed_columns.csv",
+                mime="text/csv"
+            )
+
     # Step 3: Create and Export Network Graph
     if "processed_df" in st.session_state:
         st.subheader("Step 3: Create and Export Network Graph")
